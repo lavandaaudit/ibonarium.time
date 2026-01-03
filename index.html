@@ -97,6 +97,13 @@ c.addEventListener("mousemove", e=>{if(isDragging){offsetX+=e.clientX-lastX; off
 c.addEventListener("mouseup", ()=>isDragging=false);
 c.addEventListener("mouseleave", ()=>isDragging=false);
 
+// SCROLL ZOOM
+c.addEventListener("wheel", e=>{
+  e.preventDefault();
+  scale += e.deltaY * -0.001;
+  scale = Math.min(Math.max(0.3, scale), 3);
+});
+
 // PLANET CLICK
 c.addEventListener("click", e=>{
   if(isDragging) return;
