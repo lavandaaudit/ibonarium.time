@@ -19,8 +19,19 @@ canvas{
   position:fixed;
   inset:0;
 }
-#clock{
-  z-index:2;
+.button {
+  position:absolute;
+  border:none;
+  background:rgba(255,255,255,0.1);
+  color:#fff;
+  width:28px;
+  height:28px;
+  border-radius:50%;
+  text-align:center;
+  line-height:28px;
+  cursor:pointer;
+  font-weight:bold;
+  user-select:none;
 }
 </style>
 </head>
@@ -156,7 +167,7 @@ function drawClock(){
   const m=d.getMinutes()+d.getSeconds()/60;
   const s=d.getSeconds()+d.getMilliseconds()/1000;
 
-  function hand(a,len,w,col,glow){
+  function hand(a,len,w,col,glow,type){
     ctx.save();
     ctx.translate(cx,cy);
     ctx.rotate(a);
@@ -169,12 +180,23 @@ function drawClock(){
     ctx.moveTo(-len*0.15,0);
     ctx.lineTo(len,0);
     ctx.stroke();
+
+    // показ чисел навколо стрілки
+    ctx.fillStyle=col;
+    ctx.font=`${w*2+8}px Courier New`;
+    ctx.textAlign="center";
+    ctx.textBaseline="middle";
+    const text = type==="h"?Math.floor(h):
+                 type==="m"?Math.floor(m):
+                 Math.floor(s);
+    ctx.fillText(text,len+20,0);
+
     ctx.restore();
   }
 
-  hand(h*15*Math.PI/180,R*0.45,5,"#fff",8);
-  hand(m*6*Math.PI/180,R*0.65,3,"#ccc",6);
-  hand(s*6*Math.PI/180,R*0.78,2,"#6fbaff",14);
+  hand(h*15*Math.PI/180,R*0.45,5,"#fff","8","h");
+  hand(m*6*Math.PI/180,R*0.65,3,"#ccc","6","m");
+  hand(s*6*Math.PI/180,R*0.78,2,"#6fbaff","14","s");
 
   /* center */
   ctx.fillStyle="#fff";
