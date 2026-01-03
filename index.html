@@ -2,207 +2,213 @@
 <html lang="uk">
 <head>
 <meta charset="UTF-8">
+<title>24H Astral Watch • Moon Phase</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ibonarium.time</title>
-
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400&display=swap" rel="stylesheet">
-
 <style>
-html,body{
-  margin:0;
-  width:100%;
-  height:100%;
-  background:#04060c;
-  overflow:hidden;
-  font-family:'Inter',system-ui,sans-serif;
+html, body {
+    margin: 0;
+    padding: 0;
+    background: radial-gradient(circle at bottom, #02010a, #000);
+    overflow: hidden;
 }
-
-/* ===== STAR BACKGROUND ===== */
-#stars,#stars2{
-  position:absolute;
-  inset:0;
-  background-repeat:repeat;
-  animation: drift linear infinite;
-}
-
-#stars{
-  background-image:
-    radial-gradient(1px 1px at 20px 30px, white, transparent),
-    radial-gradient(1px 1px at 200px 150px, white, transparent),
-    radial-gradient(1px 1px at 400px 80px, white, transparent);
-  opacity:.6;
-  animation-duration:180s;
-}
-
-#stars2{
-  background-image:
-    radial-gradient(1.5px 1.5px at 120px 220px, white, transparent),
-    radial-gradient(1.5px 1.5px at 320px 420px, white, transparent);
-  opacity:.3;
-  animation-duration:320s;
-}
-
-@keyframes drift{
-  from{transform:translate(0,0);}
-  to{transform:translate(-50%,-50%);}
-}
-
-/* ===== CENTER ===== */
-#wrap{
-  position:relative;
-  width:100%;
-  height:100%;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-}
-
-canvas{
-  width:min(80vw,80vh);
-  height:min(80vw,80vh);
-  backdrop-filter: blur(2px);
-  filter: drop-shadow(0 0 28px rgba(212,175,55,.15));
+canvas {
+    display: block;
 }
 </style>
 </head>
-
 <body>
 
-<div id="stars"></div>
-<div id="stars2"></div>
-
-<div id="wrap">
-  <canvas id="clock"></canvas>
-</div>
+<canvas id="canvas"></canvas>
 
 <script>
-const canvas = document.getElementById("clock");
+const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
 
-function resize(){
-  const s = Math.min(innerWidth, innerHeight) * 0.8;
-  canvas.width = s * devicePixelRatio;
-  canvas.height = s * devicePixelRatio;
-  ctx.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0);
+function resize() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
 }
+window.addEventListener("resize", resize);
 resize();
-addEventListener("resize", resize);
 
-function draw(){
-  const w = canvas.width / devicePixelRatio;
-  const h = canvas.height / devicePixelRatio;
-  const cx = w/2;
-  const cy = h/2;
-  const r = w*0.45;
+/* ================= STAR FIELD ================= */
+const stars = [];
+for (let i = 0; i < 260; i++) {
+    stars.push({
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height,
+        r: Math.random() * 1.4 + 0.2,
+        a: Math.random() * Math.PI * 2
+    });
+}
 
-  ctx.clearRect(0,0,w,h);
+function drawStars() {
+    for (let s of stars) {
+        s.a += 0.01;
+        ctx.fillStyle = `rgba(255,255,255,${0.3 + Math.sin(s.a)*0.3})`;
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+        ctx.fill();
+    }
+}
 
-  /* outer glass ring */
-  ctx.beginPath();
-  ctx.arc(cx,cy,r,0,Math.PI*2);
-  ctx.strokeStyle="rgba(255,255,255,0.18)";
-  ctx.lineWidth=1;
-  ctx.stroke();
+/* ================= MOON PHASE ================= */
+function getMoonPhase(date) {
+    const lp = 2551443; // lunar period in seconds
+    const newMoon = new Date("2000-01-06T18:14:00Z").getTime();
+    const phase = ((date.getTime() - newMoon) / 1000) % lp;
+    return phase / lp; // 0..1
+}
 
-  /* ticks */
-  for(let i=0;i<60;i++){
-    const a=i*Math.PI/30;
-    const len=i%5===0?r*0.07:r*0.035;
-    ctx.beginPath();
-    ctx.moveTo(
-      cx+Math.sin(a)*(r-len),
-      cy-Math.cos(a)*(r-len)
-    );
-    ctx.lineTo(
-      cx+Math.sin(a)*r,
-      cy-Math.cos(a)*r
-    );
-    ctx.strokeStyle=i%5===0
-      ?"rgba(255,255,255,0.55)"
-      :"rgba(255,255,255,0.25)";
-    ctx.lineWidth=i%5===0?1.6:1;
-    ctx.stroke();
-  }
-
-  /* 24h numbers */
-  ctx.fillStyle="rgba(255,255,255,0.65)";
-  ctx.font=`${r*0.09}px Inter`;
-  ctx.textAlign="center";
-  ctx.textBaseline="middle";
-  for(let h24=0;h24<24;h24++){
-    const a=h24*Math.PI/12;
-    ctx.fillText(
-      h24,
-      cx+Math.sin(a)*r*0.72,
-      cy-Math.cos(a)*r*0.72
-    );
-  }
-
-  const now=new Date();
-  const hour=now.getHours()+now.getMinutes()/60;
-  const min=now.getMinutes()+now.getSeconds()/60;
-  const sec=now.getSeconds();
-
-  function hand(angle,length,width,color,glow=0){
+function drawMoonPhase(x, y, r, phase) {
     ctx.save();
+    ctx.translate(x, y);
+
+    // Moon base
+    ctx.fillStyle = "#fff";
     ctx.beginPath();
-    ctx.moveTo(cx,cy);
-    ctx.lineTo(
-      cx+Math.sin(angle)*length,
-      cy-Math.cos(angle)*length
-    );
-    ctx.strokeStyle=color;
-    ctx.lineWidth=width;
-    ctx.lineCap="round";
-    ctx.shadowColor=color;
-    ctx.shadowBlur=glow;
+    ctx.arc(0, 0, r, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.globalCompositeOperation = "destination-out";
+
+    ctx.beginPath();
+    const k = Math.cos(phase * Math.PI * 2);
+    ctx.ellipse(k * r, 0, r, r, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.globalCompositeOperation = "source-over";
+    ctx.restore();
+}
+
+/* ================= NOISE ================= */
+function drawNoise() {
+    const imageData = ctx.createImageData(canvas.width, canvas.height);
+    for (let i = 0; i < imageData.data.length; i += 4) {
+        const v = Math.random() * 25;
+        imageData.data[i] = v;
+        imageData.data[i+1] = v;
+        imageData.data[i+2] = v;
+        imageData.data[i+3] = 25;
+    }
+    ctx.putImageData(imageData, 0, 0);
+}
+
+/* ================= GLITCH ================= */
+function drawGlitch() {
+    if (Math.random() < 0.04) {
+        const y = Math.random() * canvas.height;
+        const h = Math.random() * 8 + 2;
+        ctx.drawImage(
+            canvas,
+            0, y, canvas.width, h,
+            Math.random() * 20 - 10, y,
+            canvas.width, h
+        );
+    }
+}
+
+/* ================= CLOCK ================= */
+function drawClock() {
+    const cx = canvas.width / 2;
+    const cy = canvas.height / 2;
+    const radius = Math.min(cx, cy) * 0.38;
+
+    ctx.save();
+    ctx.translate(cx, cy);
+
+    /* Dial */
+    const grd = ctx.createRadialGradient(0,0,radius*0.1,0,0,radius);
+    grd.addColorStop(0, "#444");
+    grd.addColorStop(1, "#111");
+    ctx.fillStyle = grd;
+    ctx.beginPath();
+    ctx.arc(0, 0, radius, 0, Math.PI * 2);
+    ctx.fill();
+
+    /* Guilloché */
+    ctx.strokeStyle = "rgba(255,255,255,0.08)";
+    for (let i = 0; i < 360; i += 2) {
+        ctx.save();
+        ctx.rotate(i * Math.PI / 180);
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(radius, 0);
+        ctx.stroke();
+        ctx.restore();
+    }
+
+    /* 24H markers */
+    ctx.strokeStyle = "#ddd";
+    ctx.lineWidth = 3;
+    for (let h = 0; h < 24; h++) {
+        ctx.save();
+        ctx.rotate(h * 15 * Math.PI / 180);
+        ctx.beginPath();
+        ctx.moveTo(radius * 0.88, 0);
+        ctx.lineTo(radius * 0.98, 0);
+        ctx.stroke();
+        ctx.restore();
+    }
+
+    const now = new Date();
+    const hours = now.getHours() + now.getMinutes() / 60;
+    const minutes = now.getMinutes() + now.getSeconds() / 60;
+    const seconds = now.getSeconds() + now.getMilliseconds() / 1000;
+
+    /* Hands */
+    ctx.save();
+    ctx.rotate(hours * 15 * Math.PI / 180);
+    ctx.strokeStyle = "#f0f0f0";
+    ctx.lineWidth = 6;
+    ctx.beginPath();
+    ctx.moveTo(-radius * 0.1, 0);
+    ctx.lineTo(radius * 0.55, 0);
     ctx.stroke();
     ctx.restore();
-  }
 
-  /* hour */
-  hand(hour*Math.PI/12,r*0.45,r*0.04,"#d4af37",10);
-  ctx.fillStyle="#d4af37";
-  ctx.font=`${r*0.07}px Inter`;
-  ctx.fillText(
-    Math.floor(hour),
-    cx+Math.sin(hour*Math.PI/12)*r*0.32,
-    cy-Math.cos(hour*Math.PI/12)*r*0.32
-  );
+    ctx.save();
+    ctx.rotate(minutes * 6 * Math.PI / 180);
+    ctx.strokeStyle = "#ccc";
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.moveTo(-radius * 0.15, 0);
+    ctx.lineTo(radius * 0.75, 0);
+    ctx.stroke();
+    ctx.restore();
 
-  /* minute */
-  hand(min*Math.PI/30,r*0.65,r*0.025,"rgba(255,255,255,.85)",6);
-  ctx.fillStyle="rgba(255,255,255,.85)";
-  ctx.font=`${r*0.06}px Inter`;
-  ctx.fillText(
-    Math.floor(min),
-    cx+Math.sin(min*Math.PI/30)*r*0.45,
-    cy-Math.cos(min*Math.PI/30)*r*0.45
-  );
+    ctx.save();
+    ctx.rotate(seconds * 6 * Math.PI / 180);
+    ctx.strokeStyle = "#88f";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(-radius * 0.2, 0);
+    ctx.lineTo(radius * 0.85, 0);
+    ctx.stroke();
+    ctx.restore();
 
-  /* second (reflex) */
-  hand(sec*Math.PI/30,r*0.78,r*0.012,"rgba(255,120,120,.95)",18);
-  ctx.fillStyle="rgba(255,120,120,.9)";
-  ctx.font=`${r*0.055}px Inter`;
-  ctx.fillText(
-    sec,
-    cx+Math.sin(sec*Math.PI/30)*r*0.88,
-    cy-Math.cos(sec*Math.PI/30)*r*0.88
-  );
+    ctx.fillStyle = "#fff";
+    ctx.beginPath();
+    ctx.arc(0, 0, 6, 0, Math.PI * 2);
+    ctx.fill();
 
-  /* center */
-  ctx.beginPath();
-  ctx.arc(cx,cy,r*0.035,0,Math.PI*2);
-  ctx.fillStyle="#d4af37";
-  ctx.shadowBlur=12;
-  ctx.shadowColor="#d4af37";
-  ctx.fill();
-  ctx.shadowBlur=0;
+    /* Moon window */
+    const phase = getMoonPhase(now);
+    drawMoonPhase(0, radius * 0.45, radius * 0.16, phase);
 
-  requestAnimationFrame(draw);
+    ctx.restore();
 }
 
-draw();
+/* ================= LOOP ================= */
+function animate() {
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    drawStars();
+    drawClock();
+    drawNoise();
+    drawGlitch();
+    requestAnimationFrame(animate);
+}
+animate();
 </script>
 
 </body>
