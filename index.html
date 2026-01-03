@@ -32,43 +32,6 @@
             cursor: grabbing;
         }
 
-        /* Zoom controls (small & muted) */
-        .zoom-controls {
-            position: fixed;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 10;
-            display: flex;
-            gap: 6px;
-        }
-
-        .zoom-btn {
-            width: 22px;
-            height: 22px;
-            background: rgba(0, 0, 0, 0.1);
-            border: 1px solid rgba(77, 210, 255, 0.2);
-            color: rgba(159, 231, 255, 0.3);
-            font-size: 14px;
-            cursor: pointer;
-            border-radius: 3px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.3s;
-            font-family: Georgia, serif;
-        }
-
-        .zoom-btn:hover {
-            background: rgba(77, 210, 255, 0.08);
-            color: rgba(159, 231, 255, 0.5);
-            border-color: rgba(77, 210, 255, 0.3);
-        }
-
-        .zoom-btn:active {
-            transform: scale(0.95);
-        }
-
         /* Planet info popup */
         .planet-info {
             position: fixed;
@@ -78,8 +41,9 @@
             background: rgba(0, 0, 0, 0.9);
             border: 2px solid #4dd2ff;
             border-radius: 15px;
-            padding: 30px;
-            max-width: 500px;
+            padding: 20px;
+            max-width: 90%;
+            width: 400px;
             z-index: 100;
             display: none;
             box-shadow: 0 0 40px rgba(77, 210, 255, 0.6);
@@ -104,17 +68,15 @@
 
         .planet-info h2 {
             color: #9fe7ff;
-            margin: 0 0 15px 0;
-            font-size: 28px;
+            margin: 0 0 10px 0;
+            font-size: 22px;
             text-shadow: 0 0 10px #4dd2ff;
-            font-family: Georgia, serif;
         }
 
         .planet-info p {
             color: #9fe7ff;
-            line-height: 1.6;
-            margin: 10px 0;
-            font-family: Georgia, serif;
+            line-height: 1.5;
+            margin: 5px 0;
         }
 
         .planet-info .close-btn {
@@ -124,7 +86,7 @@
             background: none;
             border: none;
             color: #9fe7ff;
-            font-size: 30px;
+            font-size: 26px;
             cursor: pointer;
             padding: 0;
             width: 30px;
@@ -136,6 +98,38 @@
             color: #4dd2ff;
             text-shadow: 0 0 10px #4dd2ff;
         }
+
+        /* Wheel zoom hint */
+        .zoom-hint {
+            position: fixed;
+            bottom: 15px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: rgba(159, 231, 255, 0.4);
+            font-family: Georgia, serif;
+            font-size: 12px;
+            z-index: 10;
+            user-select: none;
+        }
+
+        @media (max-width: 600px) {
+            .planet-info {
+                padding: 15px;
+                width: 90%;
+            }
+
+            .planet-info h2 {
+                font-size: 18px;
+            }
+
+            .planet-info p {
+                font-size: 14px;
+            }
+
+            .zoom-hint {
+                font-size: 10px;
+            }
+        }
     </style>
 </head>
 
@@ -144,16 +138,13 @@
     <canvas id="stars"></canvas>
     <canvas id="clock"></canvas>
 
-    <div class="zoom-controls">
-        <button class="zoom-btn" id="zoomOut">−</button>
-        <button class="zoom-btn" id="zoomIn">+</button>
-    </div>
-
     <div class="planet-info" id="planetInfo">
         <button class="close-btn" id="closeInfo">×</button>
         <h2 id="planetName"></h2>
         <p id="planetDesc"></p>
     </div>
+
+    <div class="zoom-hint">🖱️ Коліщатко миші — зум</div>
 
     <script>
         /* ================== STARS BACKGROUND ================== */
@@ -207,38 +198,14 @@
         addEventListener("resize", resizeClock);
 
         const planetData = {
-            "Mercury": {
-                name: "Меркурій",
-                desc: "Найближча планета до Сонця. Найменша планета Сонячної системи з діаметром 4 879 км. День на Меркурії триває 59 земних днів, а рік — всього 88 днів. Температура коливається від -173°C вночі до +427°C вдень."
-            },
-            "Venus": {
-                name: "Венера",
-                desc: "Друга планета від Сонця, найяскравіша планета на небі. Діаметр 12 104 км. Атмосфера складається в основному з вуглекислого газу, створюючи сильний парниковий ефект. Температура поверхні близько +462°C. День триває 243 земних дні."
-            },
-            "Earth": {
-                name: "Земля",
-                desc: "Третя планета від Сонця, наш дім. Діаметр 12 742 км. Єдина відома планета з рідкою водою на поверхні та життям. Атмосфера складається з 78% азоту і 21% кисню. Один супутник — Місяць."
-            },
-            "Mars": {
-                name: "Марс",
-                desc: "Четверта планета від Сонця, 'Червона планета'. Діаметр 6 779 км. Має розріджену атмосферу з вуглекислого газу. Температура від -140°C до +20°C. Рік триває 687 земних днів. Два супутники: Фобос і Деймос."
-            },
-            "Jupiter": {
-                name: "Юпітер",
-                desc: "П'ята планета від Сонця, найбільша планета Сонячної системи. Діаметр 139 820 км. Газовий гігант, складається в основному з водню та гелію. Велика червона пляма — гігантський шторм. 95+ супутників, включаючи Ганімед, Європу, Іо та Каллісто."
-            },
-            "Saturn": {
-                name: "Сатурн",
-                desc: "Шоста планета від Сонця, відома своїми кільцями. Діаметр 116 460 км. Газовий гігант з щільністю меншою за воду. Кільця складаються з льоду та каміння. 146+ супутників, найбільший — Титан з густою атмосферою."
-            },
-            "Uranus": {
-                name: "Уран",
-                desc: "Сьома планета від Сонця, льодовий гігант. Діаметр 50 724 км. Обертається 'лежачи на боці' з нахилом осі 98°. Атмосфера містить воду, метан та аміак. Температура -224°C. 27 відомих супутників."
-            },
-            "Neptune": {
-                name: "Нептун",
-                desc: "Восьма та найвіддаленіша планета Сонячної системи. Діаметр 49 244 км. Льодовий гігант з найсильнішими вітрами в системі (до 2100 км/год). Синій колір через метан в атмосфері. Температура -214°C. 14 супутників, найбільший — Тритон."
-            }
+            "Mercury": { name: "Меркурій", desc: "Найближча планета до Сонця. Найменша планета Сонячної системи. День триває 59 земних днів, рік — 88 днів." },
+            "Venus": { name: "Венера", desc: "Друга планета від Сонця. Діаметр 12 104 км. Атмосфера в основному CO₂. День триває 243 земних дні." },
+            "Earth": { name: "Земля", desc: "Третя планета від Сонця. Діаметр 12 742 км. Єдина відома планета з рідкою водою та життям. Атмосфера: 78% N₂, 21% O₂." },
+            "Mars": { name: "Марс", desc: "Четверта планета від Сонця, 'Червона планета'. Діаметр 6 779 км. Температура -140°C до +20°C. Рік — 687 земних днів." },
+            "Jupiter": { name: "Юпітер", desc: "П'ята планета, найбільший газовий гігант. Діаметр 139 820 км. Велика червона пляма. 95+ супутників." },
+            "Saturn": { name: "Сатурн", desc: "Шоста планета. Відомі кільця з льоду та каміння. Діаметр 116 460 км. 146+ супутників." },
+            "Uranus": { name: "Уран", desc: "Льодовий гігант. Діаметр 50 724 км. Обертається 'лежачи на боці' з нахилом осі 98°. 27 супутників." },
+            "Neptune": { name: "Нептун", desc: "Восьма та найвіддаленіша планета. Діаметр 49 244 км. Льодовий гігант. Температура -214°C. 14 супутників." }
         };
 
         const planets = [
@@ -252,15 +219,21 @@
             { name: "Neptune", r: 0.88, period: 60190, size: 4 }
         ];
 
-        // Pan and zoom
+        // Dragging
         c.addEventListener("mousedown", e => { isDragging = true; lastX = e.clientX; lastY = e.clientY; });
-        c.addEventListener("mousemove", e => { if (isDragging) { offsetX += e.clientX - lastX; offsetY += e.clientY - lastY; lastX = e.clientX; lastY = e.clientY; } });
+        c.addEventListener("mousemove", e => {
+            if (isDragging) { offsetX += e.clientX - lastX; offsetY += e.clientY - lastY; lastX = e.clientX; lastY = e.clientY; }
+        });
         c.addEventListener("mouseup", () => isDragging = false);
         c.addEventListener("mouseleave", () => isDragging = false);
 
-        // Zoom buttons
-        document.getElementById("zoomIn").addEventListener("click", () => { scale = Math.min(scale * 1.3, 5); });
-        document.getElementById("zoomOut").addEventListener("click", () => { scale = Math.max(scale / 1.3, 0.5); });
+        // Wheel zoom
+        c.addEventListener("wheel", e => {
+            e.preventDefault();
+            const zoomFactor = 1.1;
+            if (e.deltaY < 0) { scale = Math.min(scale * zoomFactor, 5); } 
+            else { scale = Math.max(scale / zoomFactor, 0.5); }
+        });
 
         // Planet click
         c.addEventListener("click", e => {
@@ -272,18 +245,19 @@
             const cy = c.height / 2 + offsetY;
             const R = Math.min(c.width, c.height) * 0.42 * scale;
             const now = Date.now() / 86400000;
+
             for (let p of planets) {
                 const pr = R * p.r * 0.65;
                 const ang = (now / p.period) * Math.PI * 2;
                 const px = cx + Math.cos(ang) * pr;
                 const py = cy + Math.sin(ang) * pr;
-                const dist = Math.sqrt((mx - px) ** 2 + (my - py) ** 2);
+                const dist = Math.hypot(mx - px, my - py);
                 if (dist < p.size * 0.7 * scale + 10) { showPlanetInfo(p.name); return; }
             }
         });
 
-        function showPlanetInfo(planetName) {
-            const info = planetData[planetName];
+        function showPlanetInfo(name) {
+            const info = planetData[name];
             if (!info) return;
             document.getElementById("planetName").textContent = info.name;
             document.getElementById("planetDesc").textContent = info.desc;
@@ -300,7 +274,7 @@
             const cy = c.height / 2 + offsetY;
             const R = Math.min(c.width, c.height) * 0.42 * scale;
 
-            // outer ring
+            // outer ring glow
             ctx.strokeStyle = "rgba(79,210,255,0.3)";
             ctx.lineWidth = 2 * scale;
             ctx.shadowColor = "#4dd2ff";
@@ -310,28 +284,25 @@
             ctx.stroke();
             ctx.shadowBlur = 0;
 
-            // 24h markers, show 0,6,12,18
+            // 24h markers
             for (let h = 0; h < 24; h++) {
                 const a = h * 15 * Math.PI / 180 - Math.PI / 2;
                 const mx = cx + Math.cos(a) * R * 0.92;
                 const my = cy + Math.sin(a) * R * 0.92;
-                ctx.fillStyle = "rgba(79,210,255,0.3)";
-                ctx.shadowColor = "#4dd2ff";
-                ctx.shadowBlur = 4 * scale;
+                ctx.fillStyle = h % 6 === 0 ? "rgba(159,231,255,0.9)" : "rgba(79,210,255,0.5)";
                 ctx.beginPath();
-                ctx.arc(mx, my, 2 * scale, 0, Math.PI * 2);
+                ctx.arc(mx, my, (h % 6 === 0 ? 4 : 2.5) * scale, 0, Math.PI * 2);
                 ctx.fill();
-                ctx.shadowBlur = 0;
-
                 if (h % 6 === 0) {
-                    ctx.fillStyle = "rgba(159,231,255,0.8)";
-                    ctx.font = `${R * 0.08}px Georgia, serif`;
+                    ctx.fillStyle = "rgba(159,231,255,0.95)";
+                    ctx.font = `${R * 0.1}px Georgia, serif`;
                     ctx.textAlign = "center";
                     ctx.textBaseline = "middle";
                     ctx.fillText(h, cx + Math.cos(a) * R * 0.78, cy + Math.sin(a) * R * 0.78);
                 }
             }
 
+            // planets
             const now = Date.now() / 86400000;
             planets.forEach((p, i) => {
                 const pr = R * p.r * 0.65;
@@ -340,19 +311,20 @@
                 ctx.beginPath();
                 ctx.arc(cx, cy, pr, 0, Math.PI * 2);
                 ctx.stroke();
+
                 const ang = (now / p.period) * Math.PI * 2;
                 const px = cx + Math.cos(ang) * pr;
                 const py = cy + Math.sin(ang) * pr;
                 ctx.fillStyle = "#9fe7ff";
                 ctx.shadowColor = "#4dd2ff";
-                ctx.shadowBlur = 5 * scale;
+                ctx.shadowBlur = 8 * scale;
                 ctx.beginPath();
-                ctx.arc(px, py, p.size * 0.6 * scale, 0, Math.PI * 2);
+                ctx.arc(px, py, p.size * 0.7 * scale, 0, Math.PI * 2);
                 ctx.fill();
             });
             ctx.shadowBlur = 0;
 
-            // hands
+            // clock hands
             const d = new Date();
             const h = d.getHours() + d.getMinutes() / 60;
             const m = d.getMinutes() + d.getSeconds() / 60;
@@ -380,14 +352,14 @@
 
             hand(h * 15 * Math.PI / 180, R * 0.5, 4, "#9fe7ff", 15);
             hand(m * 6 * Math.PI / 180, R * 0.7, 3, "#6fbaff", 12);
-            hand(sec * 6 * Math.PI / 180, R * 0.85, 1.5, "#4dd2ff", 15);
+            hand(sec * 6 * Math.PI / 180, R * 0.85, 1.5, "#4dd2ff", 20);
 
             // center glow
             ctx.shadowColor = "#4dd2ff";
-            ctx.shadowBlur = 10 * scale;
+            ctx.shadowBlur = 15 * scale;
             ctx.fillStyle = "#9fe7ff";
             ctx.beginPath();
-            ctx.arc(cx, cy, 4 * scale, 0, Math.PI * 2);
+            ctx.arc(cx, cy, 5 * scale, 0, Math.PI * 2);
             ctx.fill();
             ctx.shadowBlur = 0;
 
