@@ -1,211 +1,370 @@
 <!DOCTYPE html>
 <html lang="uk">
-<head>
-<meta charset="UTF-8">
-<title>ibonarium.time</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="robots" content="noindex,nofollow">
 
-<style>
-html,body{
-  margin:0;
-  padding:0;
-  background:#000;
-  overflow:hidden;
-  font-family: "Courier New", monospace;
-  color:#9fe7ff;
-}
-canvas{
-  position:fixed;
-  inset:0;
-}
-</style>
+<head>
+    <meta charset="UTF-8">
+    <title>ibonarium.time</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex,nofollow">
+
+    <style>
+        html,
+        body {
+            margin: 0;
+            padding: 0;
+            background: #000;
+            overflow: hidden;
+            font-family: Georgia, serif;
+            color: #9fe7ff;
+        }
+
+        canvas {
+            position: fixed;
+            inset: 0;
+        }
+
+        #clock {
+            z-index: 2;
+            cursor: grab;
+        }
+
+        #clock:active {
+            cursor: grabbing;
+        }
+
+        /* Zoom controls (smaller & muted) */
+        .zoom-controls {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 10;
+            display: flex;
+            gap: 6px;
+        }
+
+        .zoom-btn {
+            width: 22px;
+            height: 22px;
+            background: rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(77, 210, 255, 0.2);
+            color: rgba(159, 231, 255, 0.3);
+            font-size: 14px;
+            font-weight: normal;
+            cursor: pointer;
+            border-radius: 3px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+            font-family: Georgia, serif;
+        }
+
+        .zoom-btn:hover {
+            background: rgba(77, 210, 255, 0.08);
+            color: rgba(159, 231, 255, 0.5);
+            border-color: rgba(77, 210, 255, 0.3);
+        }
+
+        .zoom-btn:active {
+            transform: scale(0.95);
+        }
+
+        /* Planet info popup */
+        .planet-info {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.9);
+            border: 2px solid #4dd2ff;
+            border-radius: 15px;
+            padding: 30px;
+            max-width: 500px;
+            z-index: 100;
+            display: none;
+            box-shadow: 0 0 40px rgba(77, 210, 255, 0.6);
+        }
+
+        .planet-info.active {
+            display: block;
+            animation: popIn 0.3s ease-out;
+        }
+
+        @keyframes popIn {
+            from {
+                transform: translate(-50%, -50%) scale(0.8);
+                opacity: 0;
+            }
+
+            to {
+                transform: translate(-50%, -50%) scale(1);
+                opacity: 1;
+            }
+        }
+
+        .planet-info h2 {
+            color: #9fe7ff;
+            margin: 0 0 15px 0;
+            font-size: 28px;
+            text-shadow: 0 0 10px #4dd2ff;
+            font-family: Georgia, serif;
+        }
+
+        .planet-info p {
+            color: #9fe7ff;
+            line-height: 1.6;
+            margin: 10px 0;
+            font-family: Georgia, serif;
+        }
+
+        .planet-info .close-btn {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            background: none;
+            border: none;
+            color: #9fe7ff;
+            font-size: 30px;
+            cursor: pointer;
+            padding: 0;
+            width: 30px;
+            height: 30px;
+            line-height: 30px;
+        }
+
+        .planet-info .close-btn:hover {
+            color: #4dd2ff;
+            text-shadow: 0 0 10px #4dd2ff;
+        }
+    </style>
 </head>
 
 <body>
 
-<canvas id="stars"></canvas>
-<canvas id="clock"></canvas>
+    <canvas id="stars"></canvas>
+    <canvas id="clock"></canvas>
 
-<script>
-/* ================== STARS BACKGROUND ================== */
-const s = document.getElementById("stars");
-const sctx = s.getContext("2d");
-let SW, SH, stars=[];
+    <div class="zoom-controls">
+        <button class="zoom-btn" id="zoomOut">−</button>
+        <button class="zoom-btn" id="zoomIn">+</button>
+    </div>
 
-function resizeStars(){
-  SW = s.width = innerWidth;
-  SH = s.height = innerHeight;
-  stars = Array.from({length:180},()=>({
-    x:Math.random()*SW,
-    y:Math.random()*SH,
-    z:Math.random()*SW
-  }));
-}
-resizeStars();
-addEventListener("resize",resizeStars);
+    <div class="planet-info" id="planetInfo">
+        <button class="close-btn" id="closeInfo">×</button>
+        <h2 id="planetName"></h2>
+        <p id="planetDesc"></p>
+    </div>
 
-function drawStars(){
-  sctx.fillStyle="#000";
-  sctx.fillRect(0,0,SW,SH);
-  sctx.fillStyle="#4dd2ff";
-  stars.forEach(st=>{
-    st.z-=0.25;
-    if(st.z<=0) st.z=SW;
-    const k=128/st.z;
-    const x=(st.x-SW/2)*k+SW/2;
-    const y=(st.y-SH/2)*k+SH/2;
-    if(x>0&&x<SW&&y>0&&y<SH){
-      const size=(1-st.z/SW)*2;
-      sctx.fillRect(x,y,size,size);
-    }
-  });
-  requestAnimationFrame(drawStars);
-}
-drawStars();
+    <script>
+        /* ================== STARS BACKGROUND ================== */
+        const s = document.getElementById("stars");
+        const sctx = s.getContext("2d");
+        let SW, SH, stars = [];
 
-/* ================== CLOCK / SOLAR SYSTEM ================== */
-const c = document.getElementById("clock");
-const ctx = c.getContext("2d");
+        function resizeStars() {
+            SW = s.width = innerWidth;
+            SH = s.height = innerHeight;
+            stars = Array.from({ length: 180 }, () => ({
+                x: Math.random() * SW,
+                y: Math.random() * SH,
+                z: Math.random() * SW
+            }));
+        }
+        resizeStars();
+        addEventListener("resize", resizeStars);
 
-function resizeClock(){
-  c.width = innerWidth;
-  c.height = innerHeight;
-}
-resizeClock();
-addEventListener("resize",resizeClock);
+        function drawStars() {
+            sctx.fillStyle = "#000";
+            sctx.fillRect(0, 0, SW, SH);
+            sctx.fillStyle = "#4dd2ff";
+            stars.forEach(st => {
+                st.z -= 0.25;
+                if (st.z <= 0) st.z = SW;
+                const k = 128 / st.z;
+                const x = (st.x - SW / 2) * k + SW / 2;
+                const y = (st.y - SH / 2) * k + SH / 2;
+                if (x > 0 && x < SW && y > 0 && y < SH) {
+                    const size = (1 - st.z / SW) * 2;
+                    sctx.fillRect(x, y, size, size);
+                }
+            });
+            requestAnimationFrame(drawStars);
+        }
+        drawStars();
 
-const planets = [
-  {name:"Mercury", r:0.18, period:88, size:2},
-  {name:"Venus",   r:0.26, period:225, size:3},
-  {name:"Earth",   r:0.34, period:365, size:3},
-  {name:"Mars",    r:0.42, period:687, size:2.5},
-  {name:"Jupiter", r:0.55, period:4333, size:6},
-  {name:"Saturn",  r:0.68, period:10759, size:5},
-  {name:"Uranus",  r:0.78, period:30687, size:4},
-  {name:"Neptune", r:0.88, period:60190, size:4}
-];
+        /* ================== CLOCK / SOLAR SYSTEM ================== */
+        const c = document.getElementById("clock");
+        const ctx = c.getContext("2d");
 
-function drawClock(){
-  ctx.clearRect(0,0,c.width,c.height);
+        let offsetX = 0, offsetY = 0, scale = 1;
+        let isDragging = false, lastX = 0, lastY = 0;
 
-  const cx=c.width/2;
-  const cy=c.height/2;
-  const R=Math.min(cx,cy)*0.38;
+        function resizeClock() {
+            c.width = innerWidth;
+            c.height = innerHeight;
+        }
+        resizeClock();
+        addEventListener("resize", resizeClock);
 
-  /* dial */
-  const g=ctx.createRadialGradient(cx,cy,R*0.2,cx,cy,R);
-  g.addColorStop(0,"#444");
-  g.addColorStop(1,"#111");
-  ctx.fillStyle=g;
-  ctx.beginPath();
-  ctx.arc(cx,cy,R,0,Math.PI*2);
-  ctx.fill();
+        const planetData = {
+            "Mercury": { name: "Меркурій", desc: "Найближча планета до Сонця..." },
+            "Venus": { name: "Венера", desc: "Друга планета від Сонця..." },
+            "Earth": { name: "Земля", desc: "Третя планета від Сонця..." },
+            "Mars": { name: "Марс", desc: "Четверта планета від Сонця..." },
+            "Jupiter": { name: "Юпітер", desc: "П'ята планета від Сонця..." },
+            "Saturn": { name: "Сатурн", desc: "Шоста планета від Сонця..." },
+            "Uranus": { name: "Уран", desc: "Сьома планета від Сонця..." },
+            "Neptune": { name: "Нептун", desc: "Восьма планета від Сонця..." }
+        };
 
-  /* guilloche */
-  ctx.strokeStyle="rgba(255,255,255,0.06)";
-  for(let a=0;a<360;a+=2){
-    ctx.beginPath();
-    ctx.moveTo(cx,cy);
-    ctx.lineTo(
-      cx+Math.cos(a*Math.PI/180)*R,
-      cy+Math.sin(a*Math.PI/180)*R
-    );
-    ctx.stroke();
-  }
+        const planets = [
+            { name: "Mercury", r: 0.18, period: 88, size: 2 },
+            { name: "Venus", r: 0.26, period: 225, size: 3 },
+            { name: "Earth", r: 0.34, period: 365, size: 3 },
+            { name: "Mars", r: 0.42, period: 687, size: 2.5 },
+            { name: "Jupiter", r: 0.55, period: 4333, size: 6 },
+            { name: "Saturn", r: 0.68, period: 10759, size: 5 },
+            { name: "Uranus", r: 0.78, period: 30687, size: 4 },
+            { name: "Neptune", r: 0.88, period: 60190, size: 4 }
+        ];
 
-  /* 24h numerals */
-  ctx.fillStyle="#fff";
-  ctx.font=`${R*0.09}px Courier New`;
-  ctx.textAlign="center";
-  ctx.textBaseline="middle";
-  for(let h=0;h<24;h++){
-    const a=h*15*Math.PI/180-Math.PI/2;
-    ctx.fillText(
-      h,
-      cx+Math.cos(a)*R*0.78,
-      cy+Math.sin(a)*R*0.78
-    );
-  }
+        // Pan and zoom
+        c.addEventListener("mousedown", e => { isDragging = true; lastX = e.clientX; lastY = e.clientY; });
+        c.addEventListener("mousemove", e => { if (isDragging) { offsetX += e.clientX - lastX; offsetY += e.clientY - lastY; lastX = e.clientX; lastY = e.clientY; } });
+        c.addEventListener("mouseup", () => isDragging = false);
+        c.addEventListener("mouseleave", () => isDragging = false);
 
-  /* solar system */
-  const now=Date.now()/86400000;
-  planets.forEach(p=>{
-    const pr=R*p.r*0.7;
-    ctx.strokeStyle="rgba(255,255,255,0.15)";
-    ctx.beginPath();
-    ctx.arc(cx,cy,pr,0,Math.PI*2);
-    ctx.stroke();
+        // Zoom buttons
+        document.getElementById("zoomIn").addEventListener("click", () => { scale = Math.min(scale * 1.3, 5); });
+        document.getElementById("zoomOut").addEventListener("click", () => { scale = Math.max(scale / 1.3, 0.5); });
 
-    const ang=(now/p.period)*Math.PI*2;
-    const px=cx+Math.cos(ang)*pr;
-    const py=cy+Math.sin(ang)*pr;
+        // Planet click
+        c.addEventListener("click", e => {
+            if (isDragging) return;
+            const rect = c.getBoundingClientRect();
+            const mx = e.clientX - rect.left;
+            const my = e.clientY - rect.top;
+            const cx = c.width / 2 + offsetX;
+            const cy = c.height / 2 + offsetY;
+            const R = Math.min(c.width, c.height) * 0.42 * scale;
+            const now = Date.now() / 86400000;
+            for (let p of planets) {
+                const pr = R * p.r * 0.65;
+                const ang = (now / p.period) * Math.PI * 2;
+                const px = cx + Math.cos(ang) * pr;
+                const py = cy + Math.sin(ang) * pr;
+                const dist = Math.sqrt((mx - px) ** 2 + (my - py) ** 2);
+                if (dist < p.size * 0.7 * scale + 10) { showPlanetInfo(p.name); return; }
+            }
+        });
 
-    ctx.fillStyle="#ddd";
-    ctx.beginPath();
-    ctx.arc(px,py,p.size,0,Math.PI*2);
-    ctx.fill();
-  });
+        function showPlanetInfo(planetName) {
+            const info = planetData[planetName];
+            if (!info) return;
+            document.getElementById("planetName").textContent = info.name;
+            document.getElementById("planetDesc").textContent = info.desc;
+            document.getElementById("planetInfo").classList.add("active");
+        }
 
-  /* hands */
-  const d=new Date();
-  const h=d.getHours()+d.getMinutes()/60;
-  const m=d.getMinutes()+d.getSeconds()/60;
-  const s=d.getSeconds()+d.getMilliseconds()/1000;
+        document.getElementById("closeInfo").addEventListener("click", () => {
+            document.getElementById("planetInfo").classList.remove("active");
+        });
 
-  function drawHand(a,len,w,col,type,maxValue){
-    ctx.save();
-    ctx.translate(cx,cy);
-    ctx.rotate(a);
-    ctx.strokeStyle=col;
-    ctx.lineWidth=w;
-    ctx.lineCap="round";
-    ctx.shadowColor=col;
-    ctx.shadowBlur=w*2;
-    ctx.beginPath();
-    ctx.moveTo(-len*0.15,0);
-    ctx.lineTo(len,0);
-    ctx.stroke();
+        function drawClock() {
+            ctx.clearRect(0, 0, c.width, c.height);
+            const cx = c.width / 2 + offsetX;
+            const cy = c.height / 2 + offsetY;
+            const R = Math.min(c.width, c.height) * 0.42 * scale;
 
-    // цифри навколо кінця стрілки
-    ctx.fillStyle=col;
-    ctx.font=`${w*2+6}px Courier New`;
-    ctx.textAlign="center";
-    ctx.textBaseline="middle";
-    for(let i=0;i<maxValue;i++){
-      const angle = (i/maxValue)*Math.PI*2;
-      const tx = Math.cos(angle)* (len + 20);
-      const ty = Math.sin(angle)* (len + 20);
-      ctx.fillText(i, tx, ty);
-    }
+            // outer ring glow
+            ctx.strokeStyle = "rgba(79,210,255,0.3)";
+            ctx.lineWidth = 2 * scale;
+            ctx.shadowColor = "#4dd2ff";
+            ctx.shadowBlur = 20 * scale;
+            ctx.beginPath();
+            ctx.arc(cx, cy, R, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.shadowBlur = 0;
 
-    ctx.restore();
-  }
+            // 24h markers
+            for (let h = 0; h < 24; h++) {
+                const a = h * 15 * Math.PI / 180 - Math.PI / 2;
+                const mx = cx + Math.cos(a) * R * 0.92;
+                const my = cy + Math.sin(a) * R * 0.92;
+                ctx.fillStyle = h % 6 === 0 ? "rgba(159,231,255,0.5)" : "rgba(79,210,255,0.2)";
+                ctx.shadowColor = "#4dd2ff";
+                ctx.shadowBlur = (h % 6 === 0 ? 8 : 4) * scale;
+                ctx.beginPath();
+                ctx.arc(mx, my, (h % 6 === 0 ? 3 : 2) * scale, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            ctx.shadowBlur = 0;
 
-  drawHand(h*15*Math.PI/180,R*0.45,5,"#fff","h",24);
-  drawHand(m*6*Math.PI/180,R*0.65,3,"#ccc","m",60);
-  drawHand(s*6*Math.PI/180,R*0.78,2,"#6fbaff","s",60);
+            const now = Date.now() / 86400000;
+            planets.forEach((p, i) => {
+                const pr = R * p.r * 0.65;
+                ctx.strokeStyle = `rgba(79,210,255,${0.1 + i * 0.01})`;
+                ctx.lineWidth = 0.5 * scale;
+                ctx.beginPath();
+                ctx.arc(cx, cy, pr, 0, Math.PI * 2);
+                ctx.stroke();
+                const ang = (now / p.period) * Math.PI * 2;
+                const px = cx + Math.cos(ang) * pr;
+                const py = cy + Math.sin(ang) * pr;
+                ctx.fillStyle = "#9fe7ff";
+                ctx.shadowColor = "#4dd2ff";
+                ctx.shadowBlur = 5 * scale;
+                ctx.beginPath();
+                ctx.arc(px, py, p.size * 0.6 * scale, 0, Math.PI * 2);
+                ctx.fill();
+            });
+            ctx.shadowBlur = 0;
 
-  /* center */
-  ctx.fillStyle="#fff";
-  ctx.beginPath();
-  ctx.arc(cx,cy,4,0,Math.PI*2);
-  ctx.fill();
+            // hands
+            const d = new Date();
+            const h = d.getHours() + d.getMinutes() / 60;
+            const m = d.getMinutes() + d.getSeconds() / 60;
+            const sec = d.getSeconds() + d.getMilliseconds() / 1000;
 
-  /* noise */
-  ctx.fillStyle="rgba(255,255,255,0.03)";
-  for(let i=0;i<800;i++){
-    ctx.fillRect(
-      Math.random()*c.width,
-      Math.random()*c.height,
-      1,1
-    );
-  }
+            function hand(a, len, w, col, glow) {
+                ctx.save();
+                ctx.translate(cx, cy);
+                ctx.rotate(a);
+                const grad = ctx.createLinearGradient(-len * 0.2, 0, len, 0);
+                grad.addColorStop(0, `${col}00`);
+                grad.addColorStop(0.3, col);
+                grad.addColorStop(1, col);
+                ctx.strokeStyle = grad;
+                ctx.lineWidth = w * scale;
+                ctx.lineCap = "round";
+                ctx.shadowColor = col;
+                ctx.shadowBlur = glow * scale;
+                ctx.beginPath();
+                ctx.moveTo(-len * 0.2, 0);
+                ctx.lineTo(len, 0);
+                ctx.stroke();
+                ctx.restore();
+            }
 
-  requestAnimationFrame(drawClock);
-}
-drawClock();
-</script>
+            hand(h * 15 * Math.PI / 180, R * 0.5, 4, "#9fe7ff", 15);
+            hand(m * 6 * Math.PI / 180, R * 0.7, 3, "#6fbaff", 12);
+            hand(sec * 6 * Math.PI / 180, R * 0.85, 1.5, "#4dd2ff", 15);
+
+            // center glow
+            ctx.shadowColor = "#4dd2ff";
+            ctx.shadowBlur = 10 * scale;
+            ctx.fillStyle = "#9fe7ff";
+            ctx.beginPath();
+            ctx.arc(cx, cy, 4 * scale, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.shadowBlur = 0;
+
+            requestAnimationFrame(drawClock);
+        }
+        drawClock();
+    </script>
 
 </body>
+
 </html>
