@@ -2,197 +2,199 @@
 <html lang="uk">
 <head>
 <meta charset="UTF-8">
-<title>24H Astral Watch</title>
+<title>ibonarium.time</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex,nofollow">
+
 <style>
 html,body{
-    margin:0;
-    padding:0;
-    background:#000;
-    overflow:hidden;
+  margin:0;
+  padding:0;
+  background:#000;
+  overflow:hidden;
+  font-family: "Courier New", monospace;
+  color:#9fe7ff;
 }
 canvas{
-    display:block;
+  position:fixed;
+  inset:0;
+}
+#clock{
+  z-index:2;
 }
 </style>
 </head>
+
 <body>
 
-<canvas id="c"></canvas>
+<canvas id="stars"></canvas>
+<canvas id="clock"></canvas>
 
 <script>
-const canvas = document.getElementById("c");
-const ctx = canvas.getContext("2d");
+/* ================== STARS BACKGROUND ================== */
+const s = document.getElementById("stars");
+const sctx = s.getContext("2d");
+let SW, SH, stars=[];
 
-function resize(){
-    canvas.width = innerWidth;
-    canvas.height = innerHeight;
+function resizeStars(){
+  SW = s.width = innerWidth;
+  SH = s.height = innerHeight;
+  stars = Array.from({length:180},()=>({
+    x:Math.random()*SW,
+    y:Math.random()*SH,
+    z:Math.random()*SW
+  }));
 }
-addEventListener("resize",resize);
-resize();
-
-/* ===== STARS ===== */
-const stars=[];
-for(let i=0;i<200;i++){
-    stars.push({
-        x:Math.random()*canvas.width,
-        y:Math.random()*canvas.height,
-        r:Math.random()*1.5+0.3,
-        a:Math.random()
-    });
-}
+resizeStars();
+addEventListener("resize",resizeStars);
 
 function drawStars(){
-    ctx.fillStyle="#000";
-    ctx.fillRect(0,0,canvas.width,canvas.height);
-    for(const s of stars){
-        s.a+=0.01;
-        ctx.fillStyle=`rgba(255,255,255,${0.3+Math.sin(s.a)*0.3})`;
-        ctx.beginPath();
-        ctx.arc(s.x,s.y,s.r,0,Math.PI*2);
-        ctx.fill();
+  sctx.fillStyle="#000";
+  sctx.fillRect(0,0,SW,SH);
+  sctx.fillStyle="#4dd2ff";
+  stars.forEach(st=>{
+    st.z-=0.25;
+    if(st.z<=0) st.z=SW;
+    const k=128/st.z;
+    const x=(st.x-SW/2)*k+SW/2;
+    const y=(st.y-SH/2)*k+SH/2;
+    if(x>0&&x<SW&&y>0&&y<SH){
+      const size=(1-st.z/SW)*2;
+      sctx.fillRect(x,y,size,size);
     }
+  });
+  requestAnimationFrame(drawStars);
 }
+drawStars();
 
-/* ===== MOON PHASE ===== */
-function moonPhase(d){
-    const lp = 2551443;
-    const newMoon = new Date("2000-01-06T18:14:00Z").getTime();
-    return ((d.getTime()-newMoon)/1000%lp)/lp;
+/* ================== CLOCK / SOLAR SYSTEM ================== */
+const c = document.getElementById("clock");
+const ctx = c.getContext("2d");
+
+function resizeClock(){
+  c.width = innerWidth;
+  c.height = innerHeight;
 }
+resizeClock();
+addEventListener("resize",resizeClock);
 
-function drawMoon(x,y,r,phase){
-    ctx.save();
-    ctx.translate(x,y);
+const planets = [
+  {name:"Mercury", r:0.18, period:88, size:2},
+  {name:"Venus",   r:0.26, period:225, size:3},
+  {name:"Earth",   r:0.34, period:365, size:3},
+  {name:"Mars",    r:0.42, period:687, size:2.5},
+  {name:"Jupiter", r:0.55, period:4333, size:6},
+  {name:"Saturn",  r:0.68, period:10759, size:5},
+  {name:"Uranus",  r:0.78, period:30687, size:4},
+  {name:"Neptune", r:0.88, period:60190, size:4}
+];
 
-    ctx.fillStyle="#eee";
-    ctx.beginPath();
-    ctx.arc(0,0,r,0,Math.PI*2);
-    ctx.fill();
-
-    ctx.fillStyle="#000";
-    ctx.beginPath();
-    ctx.arc((phase-0.5)*2*r,0,r,0,Math.PI*2);
-    ctx.fill();
-
-    ctx.restore();
-}
-
-/* ===== CLOCK ===== */
 function drawClock(){
-    const cx=canvas.width/2;
-    const cy=canvas.height/2;
-    const R=Math.min(cx,cy)*0.4;
+  ctx.clearRect(0,0,c.width,c.height);
 
+  const cx=c.width/2;
+  const cy=c.height/2;
+  const R=Math.min(cx,cy)*0.38;
+
+  /* dial */
+  const g=ctx.createRadialGradient(cx,cy,R*0.2,cx,cy,R);
+  g.addColorStop(0,"#444");
+  g.addColorStop(1,"#111");
+  ctx.fillStyle=g;
+  ctx.beginPath();
+  ctx.arc(cx,cy,R,0,Math.PI*2);
+  ctx.fill();
+
+  /* guilloche */
+  ctx.strokeStyle="rgba(255,255,255,0.06)";
+  for(let a=0;a<360;a+=2){
+    ctx.beginPath();
+    ctx.moveTo(cx,cy);
+    ctx.lineTo(
+      cx+Math.cos(a*Math.PI/180)*R,
+      cy+Math.sin(a*Math.PI/180)*R
+    );
+    ctx.stroke();
+  }
+
+  /* 24h numerals */
+  ctx.fillStyle="#fff";
+  ctx.font=`${R*0.09}px Courier New`;
+  ctx.textAlign="center";
+  ctx.textBaseline="middle";
+  for(let h=0;h<24;h++){
+    const a=h*15*Math.PI/180-Math.PI/2;
+    ctx.fillText(
+      h,
+      cx+Math.cos(a)*R*0.78,
+      cy+Math.sin(a)*R*0.78
+    );
+  }
+
+  /* solar system */
+  const now=Date.now()/86400000;
+  planets.forEach(p=>{
+    const pr=R*p.r*0.7;
+    ctx.strokeStyle="rgba(255,255,255,0.15)";
+    ctx.beginPath();
+    ctx.arc(cx,cy,pr,0,Math.PI*2);
+    ctx.stroke();
+
+    const ang=(now/p.period)*Math.PI*2;
+    const px=cx+Math.cos(ang)*pr;
+    const py=cy+Math.sin(ang)*pr;
+
+    ctx.fillStyle="#ddd";
+    ctx.beginPath();
+    ctx.arc(px,py,p.size,0,Math.PI*2);
+    ctx.fill();
+  });
+
+  /* hands */
+  const d=new Date();
+  const h=d.getHours()+d.getMinutes()/60;
+  const m=d.getMinutes()+d.getSeconds()/60;
+  const s=d.getSeconds()+d.getMilliseconds()/1000;
+
+  function hand(a,len,w,col,glow){
     ctx.save();
     ctx.translate(cx,cy);
-
-    /* dial */
-    const g=ctx.createRadialGradient(0,0,R*0.1,0,0,R);
-    g.addColorStop(0,"#444");
-    g.addColorStop(1,"#111");
-    ctx.fillStyle=g;
+    ctx.rotate(a);
+    ctx.strokeStyle=col;
+    ctx.lineWidth=w;
+    ctx.lineCap="round";
+    ctx.shadowColor=col;
+    ctx.shadowBlur=glow;
     ctx.beginPath();
-    ctx.arc(0,0,R,0,Math.PI*2);
-    ctx.fill();
-
-    /* guilloche */
-    ctx.strokeStyle="rgba(255,255,255,0.07)";
-    for(let i=0;i<360;i+=3){
-        ctx.save();
-        ctx.rotate(i*Math.PI/180);
-        ctx.beginPath();
-        ctx.moveTo(0,0);
-        ctx.lineTo(R,0);
-        ctx.stroke();
-        ctx.restore();
-    }
-
-    /* 24h markers */
-    ctx.strokeStyle="#ddd";
-    ctx.lineWidth=3;
-    for(let i=0;i<24;i++){
-        ctx.save();
-        ctx.rotate(i*15*Math.PI/180);
-        ctx.beginPath();
-        ctx.moveTo(R*0.88,0);
-        ctx.lineTo(R*0.98,0);
-        ctx.stroke();
-        ctx.restore();
-    }
-
-    const now=new Date();
-    const h=now.getHours()+now.getMinutes()/60;
-    const m=now.getMinutes()+now.getSeconds()/60;
-    const s=now.getSeconds()+now.getMilliseconds()/1000;
-
-    /* hour */
-    ctx.save();
-    ctx.rotate(h*15*Math.PI/180);
-    ctx.strokeStyle="#f5f5f5";
-    ctx.lineWidth=6;
-    ctx.beginPath();
-    ctx.moveTo(-R*0.1,0);
-    ctx.lineTo(R*0.55,0);
+    ctx.moveTo(-len*0.15,0);
+    ctx.lineTo(len,0);
     ctx.stroke();
     ctx.restore();
+  }
 
-    /* minute */
-    ctx.save();
-    ctx.rotate(m*6*Math.PI/180);
-    ctx.strokeStyle="#ccc";
-    ctx.lineWidth=4;
-    ctx.beginPath();
-    ctx.moveTo(-R*0.15,0);
-    ctx.lineTo(R*0.75,0);
-    ctx.stroke();
-    ctx.restore();
+  hand(h*15*Math.PI/180,R*0.45,5,"#fff",8);
+  hand(m*6*Math.PI/180,R*0.65,3,"#ccc",6);
+  hand(s*6*Math.PI/180,R*0.78,2,"#6fbaff",14);
 
-    /* second glow */
-    ctx.save();
-    ctx.rotate(s*6*Math.PI/180);
-    ctx.strokeStyle="rgba(120,160,255,0.8)";
-    ctx.shadowColor="rgba(120,160,255,0.8)";
-    ctx.shadowBlur=15;
-    ctx.lineWidth=2;
-    ctx.beginPath();
-    ctx.moveTo(-R*0.2,0);
-    ctx.lineTo(R*0.85,0);
-    ctx.stroke();
-    ctx.restore();
+  /* center */
+  ctx.fillStyle="#fff";
+  ctx.beginPath();
+  ctx.arc(cx,cy,4,0,Math.PI*2);
+  ctx.fill();
 
-    /* center */
-    ctx.fillStyle="#fff";
-    ctx.beginPath();
-    ctx.arc(0,0,5,0,Math.PI*2);
-    ctx.fill();
+  /* noise */
+  ctx.fillStyle="rgba(255,255,255,0.03)";
+  for(let i=0;i<800;i++){
+    ctx.fillRect(
+      Math.random()*c.width,
+      Math.random()*c.height,
+      1,1
+    );
+  }
 
-    /* moon */
-    drawMoon(0,R*0.45,R*0.15,moonPhase(now));
-
-    ctx.restore();
+  requestAnimationFrame(drawClock);
 }
-
-/* ===== NOISE ===== */
-function noise(){
-    ctx.fillStyle="rgba(255,255,255,0.03)";
-    for(let i=0;i<1500;i++){
-        ctx.fillRect(
-            Math.random()*canvas.width,
-            Math.random()*canvas.height,
-            1,1
-        );
-    }
-}
-
-/* ===== LOOP ===== */
-function loop(){
-    drawStars();
-    drawClock();
-    noise();
-    requestAnimationFrame(loop);
-}
-loop();
+drawClock();
 </script>
 
 </body>
