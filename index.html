@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ibonarium.time</title>
+
+<style>
+:root {
+  --bg: #05070d;
+  --gold: #d4af37;
+  --white: #d0d0d0;
+  --red: #e03a3a;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  width: 100%;
+  height: 100%;
+  background: var(--bg);
+  overflow: hidden;
+  font-family: "Segoe UI", system-ui, sans-serif;
+  color: white;
+}
+
+/* ===== STAR BACKGROUND ===== */
+#stars, #stars2 {
+  position: absolute;
+  width: 200%;
+  height: 200%;
+  background-repeat: repeat;
+  animation: drift 120s linear infinite;
+}
+
+#stars {
+  background-image:
+    radial-gradient(1px 1px at 20px 30px, white, transparent),
+    radial-gradient(1px 1px at 200px 150px, white, transparent),
+    radial-gradient(1px 1px at 400px 80px, white, transparent);
+  opacity: 0.6;
+}
+
+#stars2 {
+  background-image:
+    radial-gradient(1.5px 1.5px at 100px 200px, white, transparent),
+    radial-gradient(1.5px 1.5px at 300px 400px, white, transparent);
+  animation-duration: 240s;
+  opacity: 0.3;
+}
+
+@keyframes drift {
+  from { transform: translate(0,0); }
+  to   { transform: translate(-50%, -50%); }
+}
+
+/* ===== CENTER CLOCK ===== */
+#wrap {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+canvas {
+  width: min(80vw, 80vh);
+  height: min(80vw, 80vh);
+  filter: drop-shadow(0 0 30px rgba(212,175,55,0.25));
+}
+</style>
+</head>
+
+<body>
+
+<div id="stars"></div>
+<div id="stars2"></div>
+
+<div id="wrap">
+  <canvas id="clock"></canvas>
+</div>
+
+<script>
+const canvas = document.getElementById("clock");
+const ctx = canvas.getContext("2d");
+
+function resize() {
+  const size = Math.min(window.innerWidth, window.innerHeight) * 0.8;
+  canvas.width = size * devicePixelRatio;
+  canvas.height = size * devicePixelRatio;
+  ctx.scale(devicePixelRatio, devicePixelRatio);
+}
+resize();
+window.addEventListener("resize", resize);
+
+function draw() {
+  const w = canvas.width / devicePixelRatio;
+  const h = canvas.height / devicePixelRatio;
+  const cx = w / 2;
+  const cy = h / 2;
+  const r = w * 0.45;
+
+  ctx.clearRect(0,0,w,h);
+
+  /* face */
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, Math.PI*2);
+  ctx.fillStyle = "#0b0e18";
+  ctx.fill();
+
+  ctx.strokeStyle = "rgba(255,255,255,0.1)";
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  /* ticks */
+  for (let i=0;i<60;i++){
+    const a = i * Math.PI/30;
+    const len = i%5===0 ? r*0.08 : r*0.04;
+    ctx.strokeStyle = i%5===0 ? "#aaa" : "#555";
+    ctx.lineWidth = i%5===0 ? 2 : 1;
+    ctx.beginPath();
+    ctx.moveTo(
+      cx + Math.sin(a)*(r-len),
+      cy - Math.cos(a)*(r-len)
+    );
+    ctx.lineTo(
+      cx + Math.sin(a)*r,
+      cy - Math.cos(a)*r
+    );
+    ctx.stroke();
+  }
+
+  /* 24h numbers */
+  ctx.fillStyle = "#e6d7a6";
+  ctx.font = `${r*0.12}px Segoe UI`;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  for(let h=0;h<24;h++){
+    const a = h * Math.PI/12;
+    ctx.fillText(
+      h,
+      cx + Math.sin(a)*r*0.7,
+      cy - Math.cos(a)*r*0.7
+    );
+  }
+
+  const now = new Date();
+  const hour = now.getHours() + now.getMinutes()/60;
+  const min  = now.getMinutes() + now.getSeconds()/60;
+  const sec  = now.getSeconds();
+
+  function hand(angle, len, width, color){
+    ctx.strokeStyle = color;
+    ctx.lineWidth = width;
+    ctx.lineCap = "round";
+    ctx.beginPath();
+    ctx.moveTo(cx,cy);
+    ctx.lineTo(
+      cx + Math.sin(angle)*len,
+      cy - Math.cos(angle)*len
+    );
+    ctx.stroke();
+  }
+
+  hand(hour * Math.PI/12, r*0.5, r*0.04, "#d4af37");
+  hand(min * Math.PI/30, r*0.7, r*0.025, "#cfcfcf");
+  hand(sec * Math.PI/30, r*0.8, r*0.015, "#e03a3a");
+
+  /* center */
+  ctx.beginPath();
+  ctx.arc(cx,cy,r*0.04,0,Math.PI*2);
+  ctx.fillStyle="#d4af37";
+  ctx.fill();
+
+  requestAnimationFrame(draw);
+}
+
+draw();
+</script>
+
+</body>
+</html>
