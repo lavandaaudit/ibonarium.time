@@ -19,20 +19,6 @@ canvas{
   position:fixed;
   inset:0;
 }
-.button {
-  position:absolute;
-  border:none;
-  background:rgba(255,255,255,0.1);
-  color:#fff;
-  width:28px;
-  height:28px;
-  border-radius:50%;
-  text-align:center;
-  line-height:28px;
-  cursor:pointer;
-  font-weight:bold;
-  user-select:none;
-}
 </style>
 </head>
 
@@ -167,7 +153,7 @@ function drawClock(){
   const m=d.getMinutes()+d.getSeconds()/60;
   const s=d.getSeconds()+d.getMilliseconds()/1000;
 
-  function hand(a,len,w,col,glow,type){
+  function drawHand(a,len,w,col,type,maxValue){
     ctx.save();
     ctx.translate(cx,cy);
     ctx.rotate(a);
@@ -175,28 +161,30 @@ function drawClock(){
     ctx.lineWidth=w;
     ctx.lineCap="round";
     ctx.shadowColor=col;
-    ctx.shadowBlur=glow;
+    ctx.shadowBlur=w*2;
     ctx.beginPath();
     ctx.moveTo(-len*0.15,0);
     ctx.lineTo(len,0);
     ctx.stroke();
 
-    // показ чисел навколо стрілки
+    // цифри навколо кінця стрілки
     ctx.fillStyle=col;
-    ctx.font=`${w*2+8}px Courier New`;
+    ctx.font=`${w*2+6}px Courier New`;
     ctx.textAlign="center";
     ctx.textBaseline="middle";
-    const text = type==="h"?Math.floor(h):
-                 type==="m"?Math.floor(m):
-                 Math.floor(s);
-    ctx.fillText(text,len+20,0);
+    for(let i=0;i<maxValue;i++){
+      const angle = (i/maxValue)*Math.PI*2;
+      const tx = Math.cos(angle)* (len + 20);
+      const ty = Math.sin(angle)* (len + 20);
+      ctx.fillText(i, tx, ty);
+    }
 
     ctx.restore();
   }
 
-  hand(h*15*Math.PI/180,R*0.45,5,"#fff","8","h");
-  hand(m*6*Math.PI/180,R*0.65,3,"#ccc","6","m");
-  hand(s*6*Math.PI/180,R*0.78,2,"#6fbaff","14","s");
+  drawHand(h*15*Math.PI/180,R*0.45,5,"#fff","h",24);
+  drawHand(m*6*Math.PI/180,R*0.65,3,"#ccc","m",60);
+  drawHand(s*6*Math.PI/180,R*0.78,2,"#6fbaff","s",60);
 
   /* center */
   ctx.fillStyle="#fff";
