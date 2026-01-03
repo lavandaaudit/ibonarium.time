@@ -143,20 +143,6 @@ function drawClock(){
   ctx.lineWidth=2*scale; ctx.shadowColor="#4dd2ff"; ctx.shadowBlur=20*scale;
   ctx.beginPath(); ctx.arc(cx,cy,R,0,Math.PI*2); ctx.stroke(); ctx.shadowBlur=0;
 
-  // 24h markers
-  for(let h=0;h<24;h++){
-    const a=h*15*Math.PI/180-Math.PI/2;
-    const mx=cx+Math.cos(a)*R*0.92;
-    const my=cy+Math.sin(a)*R*0.92;
-    ctx.fillStyle=h%6===0?"rgba(159,231,255,0.9)":"rgba(79,210,255,0.5)";
-    ctx.beginPath(); ctx.arc(mx,my,h%6===0?4*scale:2.5*scale,0,Math.PI*2); ctx.fill();
-    if(h%6===0){
-      ctx.fillStyle="rgba(159,231,255,0.95)";
-      ctx.font=`${R*0.1}px Georgia, serif`; ctx.textAlign="center"; ctx.textBaseline="middle";
-      ctx.fillText(h,cx+Math.cos(a)*R*0.78, cy+Math.sin(a)*R*0.78);
-    }
-  }
-
   // planets
   const now=Date.now()/86400000;
   planets.forEach((p,i)=>{
@@ -173,26 +159,30 @@ function drawClock(){
   });
   ctx.shadowBlur=0;
 
-  // clock hands with digits
+  // clock hands
   const d=new Date();
   const hAngle=d.getHours()/12*Math.PI*2-Math.PI/2 + d.getMinutes()/60*(Math.PI/6);
   const mAngle=d.getMinutes()/60*Math.PI*2-Math.PI/2 + d.getSeconds()/3600*(Math.PI/30);
   const sAngle=d.getSeconds()/60*Math.PI*2-Math.PI/2 + d.getMilliseconds()/1000*(Math.PI/30);
 
   function hand(a,len,w,col){ctx.save(); ctx.translate(cx,cy); ctx.rotate(a); ctx.strokeStyle=col; ctx.lineWidth=w*scale; ctx.lineCap="round"; ctx.beginPath(); ctx.moveTo(-len*0.2,0); ctx.lineTo(len,0); ctx.stroke(); ctx.restore();}
-
   hand(hAngle,R*0.5,4,"#9fe7ff"); hand(mAngle,R*0.7,3,"#6fbaff"); hand(sAngle,R*0.85,2,"#4dd2ff");
 
-  // цифри напроти стрілок
-  ctx.fillStyle="#9fe7ff"; ctx.font=`${R*0.08}px monospace`; ctx.textAlign="center"; ctx.textBaseline="middle";
+  // цифри на орбітах
+  ctx.fillStyle="#9fe7ff"; ctx.font=`${R*0.05}px monospace`; ctx.textAlign="center"; ctx.textBaseline="middle";
 
-  let hx=cx+Math.cos(hAngle)*(R*0.55), hy=cy+Math.sin(hAngle)*(R*0.55);
-  let mx=cx+Math.cos(mAngle)*(R*0.75), my=cy+Math.sin(mAngle)*(R*0.75);
-  let sx=cx+Math.cos(sAngle)*(R*0.95), sy=cy+Math.sin(sAngle)*(R*0.95);
+  const orbitR = {h:R*1.05, m:R*1.15, s:R*1.25};
+  ctx.fillText(String(d.getHours()).padStart(2,"0"), cx+Math.cos(hAngle)*orbitR.h, cy+Math.sin(hAngle)*orbitR.h);
+  ctx.fillText(String(d.getMinutes()).padStart(2,"0"), cx+Math.cos(mAngle)*orbitR.m, cy+Math.sin(mAngle)*orbitR.m);
+  ctx.fillText(String(d.getSeconds()).padStart(2,"0"), cx+Math.cos(sAngle)*orbitR.s, cy+Math.sin(sAngle)*orbitR.s);
 
-  ctx.fillText(String(d.getHours()).padStart(2,"0"),hx,hy);
-  ctx.fillText(String(d.getMinutes()).padStart(2,"0"),mx,my);
-  ctx.fillText(String(d.getSeconds()).padStart(2,"0"),sx,sy);
+  // засічки для орбіт
+  for(let i=0;i<60;i++){
+    const ang=i/60*Math.PI*2-Math.PI/2;
+    [orbitR.h,orbitR.m,orbitR.s].forEach(r=>{
+      ctx.fillRect(cx+Math.cos(ang)*r-0.5, cy+Math.sin(ang)*r-0.5, 1,1);
+    });
+  }
 
   requestAnimationFrame(drawClock);
 }
