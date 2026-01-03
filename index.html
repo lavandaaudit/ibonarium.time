@@ -8,8 +8,7 @@
     <meta name="robots" content="noindex,nofollow">
 
     <style>
-        html,
-        body {
+        html, body {
             margin: 0;
             padding: 0;
             background: #000;
@@ -59,7 +58,6 @@
                 transform: translate(-50%, -50%) scale(0.8);
                 opacity: 0;
             }
-
             to {
                 transform: translate(-50%, -50%) scale(1);
                 opacity: 1;
@@ -144,7 +142,7 @@
         <p id="planetDesc"></p>
     </div>
 
-    <div class="zoom-hint">🖱️</div>
+    <div class="zoom-hint">🖱️ Коліщатко миші — зум</div>
 
     <script>
         /* ================== STARS BACKGROUND ================== */
@@ -198,14 +196,14 @@
         addEventListener("resize", resizeClock);
 
         const planetData = {
-            "Mercury": { name: "Меркурій", desc: "Найближча планета до Сонця. Найменша планета Сонячної системи. День триває 59 земних днів, рік — 88 днів." },
-            "Venus": { name: "Венера", desc: "Друга планета від Сонця. Діаметр 12 104 км. Атмосфера в основному CO₂. День триває 243 земних дні." },
-            "Earth": { name: "Земля", desc: "Третя планета від Сонця. Діаметр 12 742 км. Єдина відома планета з рідкою водою та життям. Атмосфера: 78% N₂, 21% O₂." },
-            "Mars": { name: "Марс", desc: "Четверта планета від Сонця, 'Червона планета'. Діаметр 6 779 км. Температура -140°C до +20°C. Рік — 687 земних днів." },
-            "Jupiter": { name: "Юпітер", desc: "П'ята планета, найбільший газовий гігант. Діаметр 139 820 км. Велика червона пляма. 95+ супутників." },
-            "Saturn": { name: "Сатурн", desc: "Шоста планета. Відомі кільця з льоду та каміння. Діаметр 116 460 км. 146+ супутників." },
-            "Uranus": { name: "Уран", desc: "Льодовий гігант. Діаметр 50 724 км. Обертається 'лежачи на боці' з нахилом осі 98°. 27 супутників." },
-            "Neptune": { name: "Нептун", desc: "Восьма та найвіддаленіша планета. Діаметр 49 244 км. Льодовий гігант. Температура -214°C. 14 супутників." }
+            "Mercury": { name: "Меркурій", desc: "Найближча планета до Сонця. Найменша планета Сонячної системи." },
+            "Venus": { name: "Венера", desc: "Друга планета від Сонця. Атмосфера в основному CO₂." },
+            "Earth": { name: "Земля", desc: "Третя планета від Сонця. Єдина відома планета з життям." },
+            "Mars": { name: "Марс", desc: "Четверта планета, 'Червона планета'." },
+            "Jupiter": { name: "Юпітер", desc: "П'ята планета, найбільший газовий гігант." },
+            "Saturn": { name: "Сатурн", desc: "Шоста планета. Відомі кільця з льоду та каміння." },
+            "Uranus": { name: "Уран", desc: "Льодовий гігант. Обертається 'лежачи на боці'." },
+            "Neptune": { name: "Нептун", desc: "Восьма планета. Льодовий гігант." }
         };
 
         const planets = [
@@ -221,9 +219,7 @@
 
         // Dragging
         c.addEventListener("mousedown", e => { isDragging = true; lastX = e.clientX; lastY = e.clientY; });
-        c.addEventListener("mousemove", e => {
-            if (isDragging) { offsetX += e.clientX - lastX; offsetY += e.clientY - lastY; lastX = e.clientX; lastY = e.clientY; }
-        });
+        c.addEventListener("mousemove", e => { if (isDragging) { offsetX += e.clientX - lastX; offsetY += e.clientY - lastY; lastX = e.clientX; lastY = e.clientY; } });
         c.addEventListener("mouseup", () => isDragging = false);
         c.addEventListener("mouseleave", () => isDragging = false);
 
@@ -231,8 +227,8 @@
         c.addEventListener("wheel", e => {
             e.preventDefault();
             const zoomFactor = 1.1;
-            if (e.deltaY < 0) { scale = Math.min(scale * zoomFactor, 5); } 
-            else { scale = Math.max(scale / zoomFactor, 0.5); }
+            if (e.deltaY < 0) scale = Math.min(scale * zoomFactor, 5);
+            else scale = Math.max(scale / zoomFactor, 0.5);
         });
 
         // Planet click
@@ -268,13 +264,14 @@
             document.getElementById("planetInfo").classList.remove("active");
         });
 
+        /* ================== CLOCK WITH GLITCH ================== */
         function drawClock() {
             ctx.clearRect(0, 0, c.width, c.height);
-            const cx = c.width / 2 + offsetX;
-            const cy = c.height / 2 + offsetY;
+            const cx = c.width / 2 + offsetX + (Math.random() - 0.5) * 2; // glitch center
+            const cy = c.height / 2 + offsetY + (Math.random() - 0.5) * 2;
             const R = Math.min(c.width, c.height) * 0.42 * scale;
 
-            // outer ring glow
+            // outer ring
             ctx.strokeStyle = "rgba(79,210,255,0.3)";
             ctx.lineWidth = 2 * scale;
             ctx.shadowColor = "#4dd2ff";
@@ -284,11 +281,11 @@
             ctx.stroke();
             ctx.shadowBlur = 0;
 
-            // 24h markers
+            // 24h markers with glitch
             for (let h = 0; h < 24; h++) {
                 const a = h * 15 * Math.PI / 180 - Math.PI / 2;
-                const mx = cx + Math.cos(a) * R * 0.92;
-                const my = cy + Math.sin(a) * R * 0.92;
+                const mx = cx + Math.cos(a) * R * 0.92 + (Math.random() - 0.5) * 2;
+                const my = cy + Math.sin(a) * R * 0.92 + (Math.random() - 0.5) * 2;
                 ctx.fillStyle = h % 6 === 0 ? "rgba(159,231,255,0.9)" : "rgba(79,210,255,0.5)";
                 ctx.beginPath();
                 ctx.arc(mx, my, (h % 6 === 0 ? 4 : 2.5) * scale, 0, Math.PI * 2);
@@ -298,7 +295,7 @@
                     ctx.font = `${R * 0.1}px Georgia, serif`;
                     ctx.textAlign = "center";
                     ctx.textBaseline = "middle";
-                    ctx.fillText(h, cx + Math.cos(a) * R * 0.78, cy + Math.sin(a) * R * 0.78);
+                    ctx.fillText(h, cx + Math.cos(a) * R * 0.78 + (Math.random() - 0.5) * 3, cy + Math.sin(a) * R * 0.78 + (Math.random() - 0.5) * 3);
                 }
             }
 
@@ -319,12 +316,12 @@
                 ctx.shadowColor = "#4dd2ff";
                 ctx.shadowBlur = 8 * scale;
                 ctx.beginPath();
-                ctx.arc(px, py, p.size * 0.7 * scale, 0, Math.PI * 2);
+                ctx.arc(px + (Math.random()-0.5)*2, py + (Math.random()-0.5)*2, p.size * 0.7 * scale, 0, Math.PI * 2);
                 ctx.fill();
             });
             ctx.shadowBlur = 0;
 
-            // clock hands
+            // clock hands with glitch
             const d = new Date();
             const h = d.getHours() + d.getMinutes() / 60;
             const m = d.getMinutes() + d.getSeconds() / 60;
@@ -332,8 +329,8 @@
 
             function hand(a, len, w, col, glow) {
                 ctx.save();
-                ctx.translate(cx, cy);
-                ctx.rotate(a);
+                ctx.translate(cx + (Math.random()-0.5)*2, cy + (Math.random()-0.5)*2);
+                ctx.rotate(a + (Math.random()-0.5)*0.01);
                 const grad = ctx.createLinearGradient(-len * 0.2, 0, len, 0);
                 grad.addColorStop(0, `${col}00`);
                 grad.addColorStop(0.3, col);
@@ -359,7 +356,7 @@
             ctx.shadowBlur = 15 * scale;
             ctx.fillStyle = "#9fe7ff";
             ctx.beginPath();
-            ctx.arc(cx, cy, 5 * scale, 0, Math.PI * 2);
+            ctx.arc(cx + (Math.random()-0.5)*2, cy + (Math.random()-0.5)*2, 5 * scale, 0, Math.PI * 2);
             ctx.fill();
             ctx.shadowBlur = 0;
 
@@ -369,5 +366,4 @@
     </script>
 
 </body>
-
 </html>
