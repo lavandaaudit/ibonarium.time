@@ -2,38 +2,79 @@
 <html lang="uk">
 <head>
 <meta charset="UTF-8">
-<title>ibonarium.time</title>
+<title>ibonarium.time — 24h Military Dial</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="robots" content="noindex,nofollow">
 <style>
-html, body {margin:0; padding:0; background:#000; color:#9fe7ff; font-family:Georgia, serif; overflow:hidden;}
-canvas {position:fixed; inset:0; z-index:0;}
+html, body {
+  margin: 0;
+  padding: 0;
+  background: #000;
+  color: #9fe7ff;
+  font-family: Georgia, serif;
+  overflow: hidden;
+}
+canvas {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+}
 .planet-info {
   position: fixed;
-  top: 50%; left: 50%;
+  top: 50%;
+  left: 50%;
   transform: translate(-50%, -50%);
   background: rgba(0,0,0,0.9);
   border: 2px solid #4dd2ff;
-  border-radius:15px;
-  padding:20px;
-  max-width:90%;
-  width:400px;
-  z-index:100;
-  display:none;
-  box-shadow:0 0 40px rgba(77,210,255,0.6);
+  border-radius: 15px;
+  padding: 20px;
+  max-width: 90%;
+  width: 400px;
+  z-index: 100;
+  display: none;
+  box-shadow: 0 0 40px rgba(77,210,255,0.6);
 }
-.planet-info.active {display:block; animation: popIn 0.3s ease-out;}
-@keyframes popIn {from{transform:translate(-50%,-50%) scale(0.8);opacity:0;}to{transform:translate(-50%,-50%) scale(1);opacity:1;}}
-.planet-info h2 {color:#9fe7ff; margin:0 0 10px 0; font-size:22px; text-shadow:0 0 10px #4dd2ff;}
-.planet-info p {color:#9fe7ff; line-height:1.5; margin:5px 0;}
-.planet-info .close-btn {position:absolute; top:10px; right:15px; background:none; border:none; color:#9fe7ff; font-size:26px; cursor:pointer; width:30px; height:30px; line-height:30px;}
-.planet-info .close-btn:hover {color:#4dd2ff; text-shadow:0 0 10px #4dd2ff;}
+.planet-info.active {
+  display: block;
+  animation: popIn 0.3s ease-out;
+}
+@keyframes popIn {
+  from { transform: translate(-50%,-50%) scale(0.8); opacity: 0; }
+  to   { transform: translate(-50%,-50%) scale(1);   opacity: 1; }
+}
+.planet-info h2 {
+  color: #9fe7ff;
+  margin: 0 0 10px 0;
+  font-size: 22px;
+  text-shadow: 0 0 10px #4dd2ff;
+}
+.planet-info p {
+  color: #9fe7ff;
+  line-height: 1.5;
+  margin: 5px 0;
+}
+.planet-info .close-btn {
+  position: absolute;
+  top: 10px;
+  right: 15px;
+  background: none;
+  border: none;
+  color: #9fe7ff;
+  font-size: 26px;
+  cursor: pointer;
+  width: 30px;
+  height: 30px;
+  line-height: 30px;
+}
+.planet-info .close-btn:hover {
+  color: #4dd2ff;
+  text-shadow: 0 0 10px #4dd2ff;
+}
 </style>
 </head>
 <body>
 <canvas id="stars"></canvas>
 <canvas id="clock"></canvas>
-
 <div class="planet-info" id="planetInfo">
   <button class="close-btn" id="closeInfo">×</button>
   <h2 id="planetName"></h2>
@@ -41,148 +82,239 @@ canvas {position:fixed; inset:0; z-index:0;}
 </div>
 
 <script>
-// ================= STARS =================
+// ================= ЗІРКИ =================
 const s = document.getElementById("stars");
 const sctx = s.getContext("2d");
-let SW, SH, stars=[];
-function resizeStars(){
-  SW=s.width=innerWidth; SH=s.height=innerHeight;
-  stars=Array.from({length:180},()=>({x:Math.random()*SW, y:Math.random()*SH, z:Math.random()*SW}));
+let SW, SH, stars = [];
+
+function resizeStars() {
+  SW = s.width = innerWidth;
+  SH = s.height = innerHeight;
+  stars = Array.from({length: 180}, () => ({
+    x: Math.random() * SW,
+    y: Math.random() * SH,
+    z: Math.random() * SW
+  }));
 }
 resizeStars();
 window.addEventListener("resize", resizeStars);
-function drawStars(){
-  sctx.fillStyle="#000"; sctx.fillRect(0,0,SW,SH);
-  sctx.fillStyle="#4dd2ff";
-  stars.forEach(st=>{
-    st.z-=0.25; if(st.z<=0) st.z=SW;
-    const k=128/st.z, x=(st.x-SW/2)*k+SW/2, y=(st.y-SH/2)*k+SH/2;
-    if(x>0 && x<SW && y>0 && y<SH){ const size=(1-st.z/SW)*2; sctx.fillRect(x,y,size,size);}
+
+function drawStars() {
+  sctx.fillStyle = "#000";
+  sctx.fillRect(0, 0, SW, SH);
+  sctx.fillStyle = "#4dd2ff";
+  stars.forEach(st => {
+    st.z -= 0.25;
+    if (st.z <= 0) st.z = SW;
+    const k = 128 / st.z;
+    const x = (st.x - SW/2) * k + SW/2;
+    const y = (st.y - SH/2) * k + SH/2;
+    if (x > 0 && x < SW && y > 0 && y < SH) {
+      const size = (1 - st.z / SW) * 2;
+      sctx.fillRect(x, y, size, size);
+    }
   });
   requestAnimationFrame(drawStars);
 }
 drawStars();
 
-// ================= CLOCK & PLANETS =================
+// ================= ГОДИННИК З 24-ГОДИННИМ ЦИФЕРБЛАТОМ =================
 const c = document.getElementById("clock");
 const ctx = c.getContext("2d");
-let offsetX=0, offsetY=0, scale=1, isDragging=false, lastX=0, lastY=0;
-function resizeClock(){c.width=innerWidth; c.height=innerHeight;}
-resizeClock(); window.addEventListener("resize",resizeClock);
+let offsetX = 0, offsetY = 0, scale = 1, isDragging = false, lastX = 0, lastY = 0;
+
+function resizeClock() {
+  c.width = innerWidth;
+  c.height = innerHeight;
+}
+resizeClock();
+window.addEventListener("resize", resizeClock);
 
 const planetData = {
-"Mercury":{name:"Меркурій", desc:"Найближча планета до Сонця. Найменша планета. День 59 днів, рік 88 днів."},
-"Venus":{name:"Венера", desc:"Друга планета. Діаметр 12104 км. Атмосфера CO₂. День 243 дні."},
-"Earth":{name:"Земля", desc:"Третя планета. Діаметр 12742 км. Єдина з водою та життям. Атмосфера: 78% N₂, 21% O₂."},
-"Mars":{name:"Марс", desc:"Четверта планета, 'Червона планета'. Діаметр 6779 км. Температура -140°C до +20°C. Рік 687 днів."},
-"Jupiter":{name:"Юпітер", desc:"П'ята планета, газовий гігант. Діаметр 139820 км. Велика червона пляма. 95+ супутників."},
-"Saturn":{name:"Сатурн", desc:"Шоста планета. Відомі кільця з льоду та каміння. Діаметр 116460 км. 146+ супутників."},
-"Uranus":{name:"Уран", desc:"Льодовий гігант. Діаметр 50724 км. Обертається на боці з нахилом осі 98°. 27 супутників."},
-"Neptune":{name:"Нептун", desc:"Восьма планета. Діаметр 49244 км. Температура -214°C. 14 супутників."}
+  "Mercury":  {name: "Меркурій", desc: "Найближча планета до Сонця. Найменша планета. День 59 днів, рік 88 днів."},
+  "Venus":    {name: "Венера",   desc: "Друга планета. Діаметр 12104 км. Атмосфера CO₂. День 243 дні."},
+  "Earth":    {name: "Земля",    desc: "Третя планета. Діаметр 12742 км. Єдина з водою та життям."},
+  "Mars":     {name: "Марс",     desc: "Четверта планета, 'Червона планета'. Діаметр 6779 км."},
+  "Jupiter":  {name: "Юпітер",   desc: "П'ята планета, газовий гігант. Діаметр 139820 км."},
+  "Saturn":   {name: "Сатурн",   desc: "Шоста планета. Відомі кільця з льоду та каміння."},
+  "Uranus":   {name: "Уран",     desc: "Льодовий гігант. Обертається на боці з нахилом 98°."},
+  "Neptune":  {name: "Нептун",   desc: "Восьма планета. Температура -214°C. 14 супутників."}
 };
-const planets=[
-{name:"Mercury", r:0.18, period:88, size:2},
-{name:"Venus", r:0.26, period:225, size:3},
-{name:"Earth", r:0.34, period:365, size:3},
-{name:"Mars", r:0.42, period:687, size:2.5},
-{name:"Jupiter", r:0.55, period:4333, size:6},
-{name:"Saturn", r:0.68, period:10759, size:5},
-{name:"Uranus", r:0.78, period:30687, size:4},
-{name:"Neptune", r:0.88, period:60190, size:4}
+
+const planets = [
+  {name: "Mercury", r: 0.18, period: 88,   size: 2},
+  {name: "Venus",   r: 0.26, period: 225,  size: 3},
+  {name: "Earth",   r: 0.34, period: 365,  size: 3},
+  {name: "Mars",    r: 0.42, period: 687,  size: 2.5},
+  {name: "Jupiter", r: 0.55, period: 4333, size: 6},
+  {name: "Saturn",  r: 0.68, period: 10759,size: 5},
+  {name: "Uranus",  r: 0.78, period: 30687,size: 4},
+  {name: "Neptune", r: 0.88, period: 60190,size: 4}
 ];
 
-// DRAGGING
-c.addEventListener("mousedown", e=>{isDragging=true; lastX=e.clientX; lastY=e.clientY;});
-c.addEventListener("mousemove", e=>{if(isDragging){offsetX+=e.clientX-lastX; offsetY+=e.clientY-lastY; lastX=e.clientX; lastY=e.clientY;}});
-c.addEventListener("mouseup", ()=>isDragging=false);
-c.addEventListener("mouseleave", ()=>isDragging=false);
-
-// SCROLL ZOOM
-c.addEventListener("wheel", e=>{
+// DRAGGING & ZOOM
+c.addEventListener("mousedown", e => { isDragging = true; lastX = e.clientX; lastY = e.clientY; });
+c.addEventListener("mousemove", e => {
+  if (isDragging) {
+    offsetX += e.clientX - lastX;
+    offsetY += e.clientY - lastY;
+    lastX = e.clientX;
+    lastY = e.clientY;
+  }
+});
+c.addEventListener("mouseup",   () => isDragging = false);
+c.addEventListener("mouseleave",() => isDragging = false);
+c.addEventListener("wheel", e => {
   e.preventDefault();
   scale += e.deltaY * -0.001;
   scale = Math.min(Math.max(0.3, scale), 3);
 });
 
-// PLANET CLICK
-c.addEventListener("click", e=>{
-  if(isDragging) return;
-  const rect=c.getBoundingClientRect();
-  const mx=e.clientX-rect.left;
-  const my=e.clientY-rect.top;
-  const cx=c.width/2+offsetX;
-  const cy=c.height/2+offsetY;
-  const R=Math.min(c.width,c.height)*0.42*scale;
-  const now=Date.now()/86400000;
-  for(let p of planets){
-    const pr=R*p.r*0.65;
-    const ang=(now/p.period)*Math.PI*2;
-    const px=cx+Math.cos(ang)*pr;
-    const py=cy+Math.sin(ang)*pr;
-    const dist=Math.hypot(mx-px,my-py);
-    if(dist<p.size*0.7*scale+10){ showPlanetInfo(p.name); return; }
+// Клік по планеті
+c.addEventListener("click", e => {
+  if (isDragging) return;
+  const rect = c.getBoundingClientRect();
+  const mx = e.clientX - rect.left;
+  const my = e.clientY - rect.top;
+  const cx = c.width/2 + offsetX;
+  const cy = c.height/2 + offsetY;
+  const R = Math.min(c.width, c.height) * 0.42 * scale;
+  const now = Date.now() / 86400000;
+
+  for (let p of planets) {
+    const pr = R * p.r * 0.65;
+    const ang = (now / p.period) * Math.PI * 2;
+    const px = cx + Math.cos(ang) * pr;
+    const py = cy + Math.sin(ang) * pr;
+    const dist = Math.hypot(mx - px, my - py);
+    if (dist < p.size * 0.7 * scale + 10) {
+      showPlanetInfo(p.name);
+      return;
+    }
   }
 });
 
-function showPlanetInfo(name){
-  const info=planetData[name];
-  if(!info) return;
-  document.getElementById("planetName").textContent=info.name;
-  document.getElementById("planetDesc").textContent=info.desc;
+function showPlanetInfo(name) {
+  const info = planetData[name];
+  if (!info) return;
+  document.getElementById("planetName").textContent = info.name;
+  document.getElementById("planetDesc").textContent = info.desc;
   document.getElementById("planetInfo").classList.add("active");
 }
-document.getElementById("closeInfo").addEventListener("click", ()=>document.getElementById("planetInfo").classList.remove("active"));
+document.getElementById("closeInfo").addEventListener("click", () =>
+  document.getElementById("planetInfo").classList.remove("active")
+);
 
-function drawClock(){
-  ctx.clearRect(0,0,c.width,c.height);
-  const cx=c.width/2+offsetX, cy=c.height/2+offsetY;
-  const R=Math.min(c.width,c.height)*0.42*scale;
+function drawClock() {
+  ctx.clearRect(0, 0, c.width, c.height);
+  const cx = c.width / 2 + offsetX;
+  const cy = c.height / 2 + offsetY;
+  const R = Math.min(c.width, c.height) * 0.42 * scale;
 
-  // outer ring
-  ctx.strokeStyle="rgba(79,210,255,0.3)";
-  ctx.lineWidth=2*scale; ctx.shadowColor="#4dd2ff"; ctx.shadowBlur=20*scale;
-  ctx.beginPath(); ctx.arc(cx,cy,R,0,Math.PI*2); ctx.stroke(); ctx.shadowBlur=0;
+  // Зовнішнє кільце (як на фото)
+  ctx.strokeStyle = "rgba(79,210,255,0.4)";
+  ctx.lineWidth = 3 * scale;
+  ctx.shadowColor = "#4dd2ff";
+  ctx.shadowBlur = 25 * scale;
+  ctx.beginPath();
+  ctx.arc(cx, cy, R * 1.08, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.shadowBlur = 0;
 
-  // planets
-  const now=Date.now()/86400000;
-  planets.forEach((p,i)=>{
-    const pr=R*p.r*0.65;
-    ctx.strokeStyle=`rgba(79,210,255,${0.1+i*0.01})`;
-    ctx.lineWidth=0.5*scale;
-    ctx.beginPath(); ctx.arc(cx,cy,pr,0,Math.PI*2); ctx.stroke();
+  // Планети та їх орбіти
+  const now = Date.now() / 86400000;
+  planets.forEach((p, i) => {
+    const pr = R * p.r * 0.65;
+    ctx.strokeStyle = `rgba(79,210,255,${0.1 + i * 0.01})`;
+    ctx.lineWidth = 0.5 * scale;
+    ctx.beginPath();
+    ctx.arc(cx, cy, pr, 0, Math.PI * 2);
+    ctx.stroke();
 
-    const ang=(now/p.period)*Math.PI*2;
-    const px=cx+Math.cos(ang)*pr;
-    const py=cy+Math.sin(ang)*pr;
-    ctx.fillStyle="#9fe7ff"; ctx.shadowColor="#4dd2ff"; ctx.shadowBlur=8*scale;
-    ctx.beginPath(); ctx.arc(px,py,p.size*0.7*scale,0,Math.PI*2); ctx.fill();
+    const ang = (now / p.period) * Math.PI * 2;
+    const px = cx + Math.cos(ang) * pr;
+    const py = cy + Math.sin(ang) * pr;
+
+    ctx.fillStyle = "#9fe7ff";
+    ctx.shadowColor = "#4dd2ff";
+    ctx.shadowBlur = 10 * scale;
+    ctx.beginPath();
+    ctx.arc(px, py, p.size * 0.7 * scale, 0, Math.PI * 2);
+    ctx.fill();
   });
-  ctx.shadowBlur=0;
+  ctx.shadowBlur = 0;
 
-  // clock hands
-  const d=new Date();
-  const hAngle=d.getHours()/12*Math.PI*2-Math.PI/2 + d.getMinutes()/60*(Math.PI/6);
-  const mAngle=d.getMinutes()/60*Math.PI*2-Math.PI/2 + d.getSeconds()/3600*(Math.PI/30);
-  const sAngle=d.getSeconds()/60*Math.PI*2-Math.PI/2 + d.getMilliseconds()/1000*(Math.PI/30);
+  // ====================== 24-ГОДИННИЙ ЦИФЕРБЛАТ ======================
+  const hour24 = new Date().getHours();
+  const minute = new Date().getMinutes();
+  const second = new Date().getSeconds();
 
-  function hand(a,len,w,col){ctx.save(); ctx.translate(cx,cy); ctx.rotate(a); ctx.strokeStyle=col; ctx.lineWidth=w*scale; ctx.lineCap="round"; ctx.beginPath(); ctx.moveTo(-len*0.2,0); ctx.lineTo(len,0); ctx.stroke(); ctx.restore();}
-  hand(hAngle,R*0.5,4,"#9fe7ff"); hand(mAngle,R*0.7,3,"#6fbaff"); hand(sAngle,R*0.85,2,"#4dd2ff");
+  // Кут для 24-годинної стрілки (0° = 12, 15° = 1, 30° = 2, ..., 345° = 23)
+  const hour24Angle = (hour24 + minute / 60 + second / 3600) / 24 * Math.PI * 2 - Math.PI / 2;
+  const minuteAngle  = (minute + second / 60) / 60 * Math.PI * 2 - Math.PI / 2;
+  const secondAngle  = second / 60 * Math.PI * 2 - Math.PI / 2;
 
-  // цифри на орбітах
-  ctx.fillStyle="#9fe7ff"; ctx.font=`${R*0.05}px monospace`; ctx.textAlign="center"; ctx.textBaseline="middle";
+  // Малюємо 24 цифри (1–24) по колу
+  ctx.fillStyle = "#9fe7ff";
+  ctx.font = `${R * 0.07}px Arial, sans-serif`;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.shadowColor = "#4dd2ff";
+  ctx.shadowBlur = 12 * scale;
 
-  const orbitR = {h:R*1.05, m:R*1.15, s:R*1.25};
-  ctx.fillText(String(d.getHours()).padStart(2,"0"), cx+Math.cos(hAngle)*orbitR.h, cy+Math.sin(hAngle)*orbitR.h);
-  ctx.fillText(String(d.getMinutes()).padStart(2,"0"), cx+Math.cos(mAngle)*orbitR.m, cy+Math.sin(mAngle)*orbitR.m);
-  ctx.fillText(String(d.getSeconds()).padStart(2,"0"), cx+Math.cos(sAngle)*orbitR.s, cy+Math.sin(sAngle)*orbitR.s);
-
-  // засічки для орбіт
-  for(let i=0;i<60;i++){
-    const ang=i/60*Math.PI*2-Math.PI/2;
-    [orbitR.h,orbitR.m,orbitR.s].forEach(r=>{
-      ctx.fillRect(cx+Math.cos(ang)*r-0.5, cy+Math.sin(ang)*r-0.5, 1,1);
-    });
+  for (let i = 1; i <= 24; i++) {
+    const ang = (i / 24) * Math.PI * 2 - Math.PI / 2;
+    const tx = cx + Math.cos(ang) * R * 0.88;
+    const ty = cy + Math.sin(ang) * R * 0.88;
+    ctx.fillText(i.toString(), tx, ty);
   }
+  ctx.shadowBlur = 0;
+
+  // Зелені lume-мітки (як на фото) — короткі рискі біля кожної години
+  ctx.fillStyle = "#4dd2ff";
+  ctx.shadowColor = "#4dd2ff";
+  ctx.shadowBlur = 8 * scale;
+  for (let i = 0; i < 24; i++) {
+    const ang = (i / 24) * Math.PI * 2 - Math.PI / 2;
+    const x1 = cx + Math.cos(ang) * R * 0.92;
+    const y1 = cy + Math.sin(ang) * R * 0.92;
+    const x2 = cx + Math.cos(ang) * R * 1.02;
+    const y2 = cy + Math.sin(ang) * R * 1.02;
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.lineWidth = 2.5 * scale;
+    ctx.stroke();
+  }
+  ctx.shadowBlur = 0;
+
+  // Стрілки (24h, хвилинна, секундна)
+  function drawHand(angle, length, width, color) {
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(angle);
+    ctx.strokeStyle = color;
+    ctx.lineWidth = width * scale;
+    ctx.lineCap = "round";
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(length, 0);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  // 24-годинна стрілка (товстіша, коротша)
+  drawHand(hour24Angle, R * 0.55, 5, "#9fe7ff");
+  // Хвилинна
+  drawHand(minuteAngle,  R * 0.78, 4, "#6fbaff");
+  // Секундна
+  drawHand(secondAngle,  R * 0.92, 2, "#4dd2ff");
+
+  // Центральна точка
+  ctx.fillStyle = "#4dd2ff";
+  ctx.beginPath();
+  ctx.arc(cx, cy, 6 * scale, 0, Math.PI * 2);
+  ctx.fill();
 
   requestAnimationFrame(drawClock);
 }
