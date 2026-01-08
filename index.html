@@ -1,192 +1,225 @@
 <!DOCTYPE html>
 <html lang="uk">
 <head>
-<meta charset="UTF-8">
-<title>ibonarium.time</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="robots" content="noindex,nofollow">
-<style>
-html, body {margin:0; padding:0; background:#000; color:#9fe7ff; font-family:Georgia, serif; overflow:hidden;}
-canvas {position:fixed; inset:0; z-index:0;}
-.planet-info {
-  position: fixed;
-  top: 50%; left: 50%;
-  transform: translate(-50%, -50%);
-  background: rgba(0,0,0,0.9);
-  border: 2px solid #4dd2ff;
-  border-radius:15px;
-  padding:20px;
-  max-width:90%;
-  width:400px;
-  z-index:100;
-  display:none;
-  box-shadow:0 0 40px rgba(77,210,255,0.6);
-}
-.planet-info.active {display:block; animation: popIn 0.3s ease-out;}
-@keyframes popIn {from{transform:translate(-50%,-50%) scale(0.8);opacity:0;}to{transform:translate(-50%,-50%) scale(1);opacity:1;}}
-.planet-info h2 {color:#9fe7ff; margin:0 0 10px 0; font-size:22px; text-shadow:0 0 10px #4dd2ff;}
-.planet-info p {color:#9fe7ff; line-height:1.5; margin:5px 0;}
-.planet-info .close-btn {position:absolute; top:10px; right:15px; background:none; border:none; color:#9fe7ff; font-size:26px; cursor:pointer; width:30px; height:30px; line-height:30px;}
-.planet-info .close-btn:hover {color:#4dd2ff; text-shadow:0 0 10px #4dd2ff;}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="referrer" content="no-referrer">
+    <meta name="robots" content="noindex,nofollow">
+    <title>Ibonarium Cosmo Dynamics LAB LIVE</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        html, body {
+            width: 100%;
+            height: 100%;
+            background: #000;
+            overflow: hidden;
+            color: #cfefff;
+            font-family: 'Cinzel', serif;
+        }
+        canvas {
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+        }
+        .wrapper {
+            position: relative;
+            z-index: 1;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        .header {
+            text-align: center;
+            padding: 12px 8px;
+            background: #000;
+            flex-shrink: 0;
+        }
+        .main-title {
+            font-size: clamp(20px, 4.5vw, 34px);
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            cursor: pointer;
+            text-shadow: 0 0 20px #ffcc00;
+            color: #ffcc00;
+            transition: all 0.3s ease;
+        }
+        .main-title:hover {
+            text-shadow: 0 0 40px #ffcc00;
+            transform: scale(1.04);
+        }
+        .content {
+            flex: 1;
+            padding: 2px 4px; /* мінімальні відступи від країв */
+            display: flex;
+            flex-direction: column;
+            gap: 2px; /* мінімальний відступ між рядками */
+            overflow-y: hidden;
+        }
+        @media (max-width: 768px) {
+            .content {
+                overflow-y: auto;
+                -webkit-overflow-scrolling: touch;
+                scrollbar-width: none;
+                -ms-overflow-style: none;
+                padding-top: 1px;
+            }
+            .content::-webkit-scrollbar {
+                display: none;
+            }
+        }
+        .row {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 2px; /* максимально маленькі відстані між зображеннями */
+        }
+        .block {
+            width: 100%;
+            aspect-ratio: 1 / 1;
+            overflow: hidden;
+            border-radius: 12px;
+            position: relative;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+            transform: scale(0.98); /* зроблено майже повнорозмірними на десктопі */
+            transform-origin: center;
+        }
+        .block::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: 12px;
+            padding: 2px;
+            background: linear-gradient(45deg, #ffcc00, #ff6600, #ffcc00, #ffff66);
+            mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
+            mask-composite: exclude;
+            -webkit-mask-composite: xor;
+            animation: neonPulse 4s linear infinite, neonFlicker 8s linear infinite;
+            pointer-events: none;
+            z-index: 1;
+        }
+        .block:hover::before,
+        .block:active::before {
+            animation-duration: 1s, 2s;
+            box-shadow: 0 0 30px #ffcc00;
+        }
+        .block:hover {
+            transform: scale(1);
+        }
+        .block img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+            border-radius: 10px;
+        }
+        .red-gif img { filter: hue-rotate(0deg) saturate(1.6) brightness(1.1); }
+        .blue-gif img { filter: hue-rotate(200deg) saturate(1.6) brightness(1.1); }
+        .footer {
+            text-align: center;
+            padding: 8px 8px;
+            background: #000;
+            flex-shrink: 0;
+            font-size: clamp(10px, 2.5vw, 13px);
+            opacity: 0.8;
+            letter-spacing: 0.05em;
+        }
+        /* Адаптивність */
+        @media (max-width: 1024px) {
+            .row { grid-template-columns: repeat(2, 1fr); }
+            .block { transform: scale(0.98); }
+            .block:hover { transform: scale(1); }
+        }
+        @media (max-width: 768px) {
+            .row { grid-template-columns: repeat(2, 1fr); gap: 2px; }
+            .block { transform: scale(0.99); }
+            .block:hover { transform: scale(1); }
+        }
+        @media (max-width: 480px) {
+            .row { grid-template-columns: 1fr; }
+            .block { transform: scale(1); }
+        }
+    </style>
 </head>
 <body>
-<canvas id="stars"></canvas>
-<canvas id="clock"></canvas>
-
-<div class="planet-info" id="planetInfo">
-  <button class="close-btn" id="closeInfo">×</button>
-  <h2 id="planetName"></h2>
-  <p id="planetDesc"></p>
-</div>
-
-<script>
-// ================= STARS =================
-const s = document.getElementById("stars");
-const sctx = s.getContext("2d");
-let SW, SH, stars=[];
-function resizeStars(){
-  SW=s.width=innerWidth; SH=s.height=innerHeight;
-  stars=Array.from({length:180},()=>({x:Math.random()*SW, y:Math.random()*SH, z:Math.random()*SW}));
-}
-resizeStars();
-window.addEventListener("resize", resizeStars);
-function drawStars(){
-  sctx.fillStyle="#000"; sctx.fillRect(0,0,SW,SH);
-  sctx.fillStyle="#4dd2ff";
-  stars.forEach(st=>{
-    st.z-=0.25; if(st.z<=0) st.z=SW;
-    const k=128/st.z, x=(st.x-SW/2)*k+SW/2, y=(st.y-SH/2)*k+SH/2;
-    if(x>0 && x<SW && y>0 && y<SH){ const size=(1-st.z/SW)*2; sctx.fillRect(x,y,size,size);}
-  });
-  requestAnimationFrame(drawStars);
-}
-drawStars();
-
-// ================= CLOCK & PLANETS =================
-const c = document.getElementById("clock");
-const ctx = c.getContext("2d");
-let offsetX=0, offsetY=0, scale=1, isDragging=false, lastX=0, lastY=0;
-function resizeClock(){c.width=innerWidth; c.height=innerHeight;}
-resizeClock(); window.addEventListener("resize",resizeClock);
-
-const planetData = {
-"Mercury":{name:"Меркурій", desc:"Найближча планета до Сонця. Найменша планета. День 59 днів, рік 88 днів."},
-"Venus":{name:"Венера", desc:"Друга планета. Діаметр 12104 км. Атмосфера CO₂. День 243 дні."},
-"Earth":{name:"Земля", desc:"Третя планета. Діаметр 12742 км. Єдина з водою та життям. Атмосфера: 78% N₂, 21% O₂."},
-"Mars":{name:"Марс", desc:"Четверта планета, 'Червона планета'. Діаметр 6779 км. Температура -140°C до +20°C. Рік 687 днів."},
-"Jupiter":{name:"Юпітер", desc:"П'ята планета, газовий гігант. Діаметр 139820 км. Велика червона пляма. 95+ супутників."},
-"Saturn":{name:"Сатурн", desc:"Шоста планета. Відомі кільця з льоду та каміння. Діаметр 116460 км. 146+ супутників."},
-"Uranus":{name:"Уран", desc:"Льодовий гігант. Діаметр 50724 км. Обертається на боці з нахилом осі 98°. 27 супутників."},
-"Neptune":{name:"Нептун", desc:"Восьма планета. Діаметр 49244 км. Температура -214°C. 14 супутників."}
-};
-const planets=[
-{name:"Mercury", r:0.18, period:88, size:2},
-{name:"Venus", r:0.26, period:225, size:3},
-{name:"Earth", r:0.34, period:365, size:3},
-{name:"Mars", r:0.42, period:687, size:2.5},
-{name:"Jupiter", r:0.55, period:4333, size:6},
-{name:"Saturn", r:0.68, period:10759, size:5},
-{name:"Uranus", r:0.78, period:30687, size:4},
-{name:"Neptune", r:0.88, period:60190, size:4}
-];
-
-// DRAGGING
-c.addEventListener("mousedown", e=>{isDragging=true; lastX=e.clientX; lastY=e.clientY;});
-c.addEventListener("mousemove", e=>{if(isDragging){offsetX+=e.clientX-lastX; offsetY+=e.clientY-lastY; lastX=e.clientX; lastY=e.clientY;}});
-c.addEventListener("mouseup", ()=>isDragging=false);
-c.addEventListener("mouseleave", ()=>isDragging=false);
-
-// SCROLL ZOOM
-c.addEventListener("wheel", e=>{
-  e.preventDefault();
-  scale += e.deltaY * -0.001;
-  scale = Math.min(Math.max(0.3, scale), 3);
-});
-
-// PLANET CLICK
-c.addEventListener("click", e=>{
-  if(isDragging) return;
-  const rect=c.getBoundingClientRect();
-  const mx=e.clientX-rect.left;
-  const my=e.clientY-rect.top;
-  const cx=c.width/2+offsetX;
-  const cy=c.height/2+offsetY;
-  const R=Math.min(c.width,c.height)*0.42*scale;
-  const now=Date.now()/86400000;
-  for(let p of planets){
-    const pr=R*p.r*0.65;
-    const ang=(now/p.period)*Math.PI*2;
-    const px=cx+Math.cos(ang)*pr;
-    const py=cy+Math.sin(ang)*pr;
-    const dist=Math.hypot(mx-px,my-py);
-    if(dist<p.size*0.7*scale+10){ showPlanetInfo(p.name); return; }
-  }
-});
-
-function showPlanetInfo(name){
-  const info=planetData[name];
-  if(!info) return;
-  document.getElementById("planetName").textContent=info.name;
-  document.getElementById("planetDesc").textContent=info.desc;
-  document.getElementById("planetInfo").classList.add("active");
-}
-document.getElementById("closeInfo").addEventListener("click", ()=>document.getElementById("planetInfo").classList.remove("active"));
-
-function drawClock(){
-  ctx.clearRect(0,0,c.width,c.height);
-  const cx=c.width/2+offsetX, cy=c.height/2+offsetY;
-  const R=Math.min(c.width,c.height)*0.42*scale;
-
-  // outer ring
-  ctx.strokeStyle="rgba(79,210,255,0.3)";
-  ctx.lineWidth=2*scale; ctx.shadowColor="#4dd2ff"; ctx.shadowBlur=20*scale;
-  ctx.beginPath(); ctx.arc(cx,cy,R,0,Math.PI*2); ctx.stroke(); ctx.shadowBlur=0;
-
-  // planets
-  const now=Date.now()/86400000;
-  planets.forEach((p,i)=>{
-    const pr=R*p.r*0.65;
-    ctx.strokeStyle=`rgba(79,210,255,${0.1+i*0.01})`;
-    ctx.lineWidth=0.5*scale;
-    ctx.beginPath(); ctx.arc(cx,cy,pr,0,Math.PI*2); ctx.stroke();
-
-    const ang=(now/p.period)*Math.PI*2;
-    const px=cx+Math.cos(ang)*pr;
-    const py=cy+Math.sin(ang)*pr;
-    ctx.fillStyle="#9fe7ff"; ctx.shadowColor="#4dd2ff"; ctx.shadowBlur=8*scale;
-    ctx.beginPath(); ctx.arc(px,py,p.size*0.7*scale,0,Math.PI*2); ctx.fill();
-  });
-  ctx.shadowBlur=0;
-
-  // clock hands
-  const d=new Date();
-  const hAngle=d.getHours()/12*Math.PI*2-Math.PI/2 + d.getMinutes()/60*(Math.PI/6);
-  const mAngle=d.getMinutes()/60*Math.PI*2-Math.PI/2 + d.getSeconds()/3600*(Math.PI/30);
-  const sAngle=d.getSeconds()/60*Math.PI*2-Math.PI/2 + d.getMilliseconds()/1000*(Math.PI/30);
-
-  function hand(a,len,w,col){ctx.save(); ctx.translate(cx,cy); ctx.rotate(a); ctx.strokeStyle=col; ctx.lineWidth=w*scale; ctx.lineCap="round"; ctx.beginPath(); ctx.moveTo(-len*0.2,0); ctx.lineTo(len,0); ctx.stroke(); ctx.restore();}
-  hand(hAngle,R*0.5,4,"#9fe7ff"); hand(mAngle,R*0.7,3,"#6fbaff"); hand(sAngle,R*0.85,2,"#4dd2ff");
-
-  // цифри на орбітах
-  ctx.fillStyle="#9fe7ff"; ctx.font=`${R*0.05}px monospace`; ctx.textAlign="center"; ctx.textBaseline="middle";
-
-  const orbitR = {h:R*1.05, m:R*1.15, s:R*1.25};
-  ctx.fillText(String(d.getHours()).padStart(2,"0"), cx+Math.cos(hAngle)*orbitR.h, cy+Math.sin(hAngle)*orbitR.h);
-  ctx.fillText(String(d.getMinutes()).padStart(2,"0"), cx+Math.cos(mAngle)*orbitR.m, cy+Math.sin(mAngle)*orbitR.m);
-  ctx.fillText(String(d.getSeconds()).padStart(2,"0"), cx+Math.cos(sAngle)*orbitR.s, cy+Math.sin(sAngle)*orbitR.s);
-
-  // засічки для орбіт
-  for(let i=0;i<60;i++){
-    const ang=i/60*Math.PI*2-Math.PI/2;
-    [orbitR.h,orbitR.m,orbitR.s].forEach(r=>{
-      ctx.fillRect(cx+Math.cos(ang)*r-0.5, cy+Math.sin(ang)*r-0.5, 1,1);
-    });
-  }
-
-  requestAnimationFrame(drawClock);
-}
-drawClock();
-</script>
+    <canvas id="stars"></canvas>
+    <div class="wrapper">
+        <div class="header">
+            <div class="main-title" onclick="window.open('https://t.me/ibonariumcosmodynamicslablive', '_blank')">
+                Ibonarium Cosmo Dynamics LAB LIVE
+            </div>
+        </div>
+        <div class="content">
+            <div class="row">
+                <div class="block red-gif">
+                    <img src="https://soho.nascom.nasa.gov/data/LATEST/current_c2.gif" alt="LASCO C2" loading="lazy">
+                </div>
+                <div class="block">
+                    <img src="https://sdo.gsfc.nasa.gov/assets/img/latest/latest_1024_0171.jpg" alt="AIA 171" loading="lazy">
+                </div>
+                <div class="block">
+                    <img src="https://sdo.gsfc.nasa.gov/assets/img/latest/latest_1024_0193.jpg" alt="AIA 193" loading="lazy">
+                </div>
+                <div class="block">
+                    <img src="https://sdo.gsfc.nasa.gov/assets/img/latest/latest_1024_0304.jpg" alt="AIA 304" loading="lazy">
+                </div>
+            </div>
+            <div class="row">
+                <div class="block blue-gif">
+                    <img src="https://soho.nascom.nasa.gov/data/LATEST/current_c3.gif" alt="LASCO C3" loading="lazy">
+                </div>
+                <div class="block">
+                    <img src="https://sdo.gsfc.nasa.gov/assets/img/latest/latest_1024_0211.jpg" alt="AIA 211" loading="lazy">
+                </div>
+                <div class="block">
+                    <img src="https://sdo.gsfc.nasa.gov/assets/img/latest/latest_1024_0131.jpg" alt="AIA 131" loading="lazy">
+                </div>
+                <div class="block">
+                    <img src="https://sdo.gsfc.nasa.gov/assets/img/latest/latest_1024_0094.jpg" alt="AIA 094" loading="lazy">
+                </div>
+            </div>
+        </div>
+        <div class="footer">
+            NASA/ESA SOHO LASCO + NASA SDO AIA • Реал-тайм спостереження Сонця
+        </div>
+    </div>
+    <script>
+        // STARFIELD
+        const canvas = document.getElementById("stars");
+        const ctx = canvas.getContext("2d");
+        let W, H, stars = [];
+        function resize() {
+            W = canvas.width = window.innerWidth;
+            H = canvas.height = window.innerHeight;
+            stars = Array.from({length: 180}, () => ({
+                x: Math.random()*W, y: Math.random()*H, z: Math.random()*W
+            }));
+        }
+        resize();
+        window.addEventListener("resize", resize);
+        function render() {
+            ctx.fillStyle = "#000";
+            ctx.fillRect(0,0,W,H);
+            ctx.fillStyle = "#4dd2ff";
+            stars.forEach(s => {
+                s.z -= 0.25;
+                if (s.z <= 0) s.z = W;
+                const k = 128 / s.z;
+                const x = (s.x - W/2) * k + W/2;
+                const y = (s.y - H/2) * k + H/2;
+                if (x>0 && x<W && y>0 && y<H) {
+                    const size = (1 - s.z/W)*3;
+                    ctx.fillRect(x,y,size,size);
+                }
+            });
+            requestAnimationFrame(render);
+        }
+        render();
+    </script>
 </body>
 </html>
